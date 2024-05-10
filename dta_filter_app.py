@@ -7,7 +7,10 @@ from util import serialize_redundant_peptides
 
 st.set_page_config(layout="wide")
 
-dta_select_file = st.file_uploader("Choose a file", type=['txt'])
+st.title("DTASelect Filter - PDB Sequence Coverage")
+st.caption("This app will take a DTASelect filter file and generate a list of proteins with links to the PDB Viewer")
+
+dta_select_file = st.file_uploader("Choose a DTASelect Filter File", type=['txt'])
 
 if dta_select_file is not None:
     _, peptide_df, protein_df, _ = filterframes.from_dta_select_filter(dta_select_file)
@@ -26,7 +29,7 @@ if dta_select_file is not None:
     protein_df['Sequence Coverage'] = protein_df['Sequence Coverage'].str.rstrip('%').astype('float')
     protein_df['Reverse'] = protein_df['Database'].str.contains('reverse', case=False)
 else:
-    st.write("No file uploaded")
+    st.warning("No file uploaded")
     st.stop()
 
 protein_group_to_peptides = {}
