@@ -6,6 +6,7 @@ from urllib.request import urlopen
 import py3Dmol
 import stmol
 from matplotlib import pyplot as plt
+import streamlit as st
 
 
 def serialize_redundant_peptides(peptides: list) -> str:
@@ -79,7 +80,7 @@ def parse_coverage_array(coverage_array: str) -> list:
     return [int(c) for c in coverage_array.split(",")]
 
 
-def get_predictions(qualifier: str) -> Iterator[dict]:
+def _get_predictions(qualifier: str) -> Iterator[dict]:
     """Get all AlphaFold predictions for a UniProt accession.
 
     :param qualifier: A UniProt accession, e.g. P00520
@@ -91,6 +92,18 @@ def get_predictions(qualifier: str) -> Iterator[dict]:
     # Retrieve the AlphaFold predictions with urllib
     with urlopen(url) as response:
         yield from json.loads(response.read().decode())
+
+
+@st.cache_data()
+def get_predictions(qualifier: str) -> list:
+    """Get all AlphaFold predictions for a UniProt accession.
+
+    :param qualifier: A UniProt accession, e.g. P00520
+    :type qualifier: str
+    :return: The AlphaFold predictions
+    :rtype: list
+    """
+    return list(_get_predictions(qualifier))
 
 
 def render_mol(pdb, cov_arr, pdb_style, bcolor, highlight_residues):

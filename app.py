@@ -36,6 +36,10 @@ if 'input' not in qp:
         st.error(f"Should not happen... Big oops.")
         st.stop()
 
+if 'reverse_protein' not in qp:
+    qp["reverse_protein"] = False
+
+
 
 with st.sidebar:
     color_map = st.selectbox("Choose a color map", color_maps)
@@ -46,13 +50,18 @@ with st.sidebar:
 
     protein_id = st.text_input("Protein ID", qp["protein_id"])
 
-    predictions = list(get_predictions(protein_id))
+    predictions = get_predictions(protein_id)
     if len(predictions) == 0:
         st.error(f"No predictions found for protein {protein_id}")
     elif len(predictions) > 1:
         st.warning(f"Multiple predictions found for protein {protein_id}. Using the first one.")
     pdb_url = predictions[0]['pdbUrl']
     uniprotSequence = predictions[0]['uniprotSequence']
+
+    reverse_protein = st.checkbox("Reverse protein", value=qp["reverse_protein"].lower() == "true")
+
+    if reverse_protein:
+        uniprotSequence = uniprotSequence[::-1]
 
     INPUT_TYPES = ["coverage_array", "peptides", "redundant_peptides"]
     input_type = st.radio("Input type", INPUT_TYPES, index=INPUT_TYPES.index(qp["input_type"]), horizontal=True)
@@ -67,6 +76,7 @@ with st.sidebar:
             peptides = [pt.strip_mods(peptide) for peptide in peptides]
         if filter_unqiue:
             peptides = list(set(peptides))
+
         coverage_array = np.array(pt.coverage(uniprotSequence, peptides, True, True))
     elif input_type == "redundant_peptides":
         c1, c2 = st.columns(2)
@@ -78,6 +88,9 @@ with st.sidebar:
         if filter_unqiue:
             peptides = list(set(peptides))
         coverage_array = np.array(pt.coverage(uniprotSequence, peptides, True, True))
+
+if reverse_protein:
+    coverage_array = coverage_array[::-1]
 
 
 if binary_coverage:
