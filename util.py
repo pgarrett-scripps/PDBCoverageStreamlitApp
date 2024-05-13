@@ -122,7 +122,7 @@ def render_mol(pdb, cov_arr, pdb_style, bcolor, highlight_residues):
 
     view.zoomTo()
 
-    stmol.showmol(view, height=1000, width=1000)
+    stmol.showmol(view, height=500, width=700)
 
 
 def plot_coverage_array(coverage_array, color_map):
