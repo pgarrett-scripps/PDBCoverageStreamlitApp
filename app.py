@@ -132,8 +132,6 @@ for i, aa in enumerate(uniprotSequence):
     if aa in selected_residue:
         sites.append(i)
 
-print(sites)
-
 # Create a colormap
 cmap = mpl.colormaps.get_cmap(color_map)
 
