@@ -1,3 +1,5 @@
+from urllib.error import HTTPError
+
 import numpy as np
 import requests
 import streamlit as st
@@ -41,7 +43,7 @@ if 'input' not in qp:
 if 'reverse_protein' not in qp:
     qp["reverse_protein"] = False
 
-
+container = st.container()
 
 with st.sidebar:
     color_map = st.selectbox("Choose a color map", color_maps)
@@ -53,11 +55,17 @@ with st.sidebar:
 
     protein_id = st.text_input("Protein ID", qp["protein_id"])
 
-    predictions = get_predictions(protein_id)
+    try:
+        predictions = get_predictions(protein_id)
+    except HTTPError as e:
+        predictions = []
+
     if len(predictions) == 0:
-        st.error(f"No predictions found for protein {protein_id}")
+        container.error(f"No predictions found for protein {protein_id}")
+        st.stop()
     elif len(predictions) > 1:
-        st.warning(f"Multiple predictions found for protein {protein_id}. Using the first one.")
+        container.warning(f"Multiple predictions found for protein {protein_id}. Using the first one.")
+
     pdb_url = predictions[0]['pdbUrl']
     uniprotSequence = predictions[0]['uniprotSequence']
 
@@ -95,7 +103,6 @@ with st.sidebar:
 if reverse_protein:
     coverage_array = coverage_array[::-1]
 
-
 if binary_coverage:
     coverage_array = np.where(coverage_array > 0, 1, 0)
 
@@ -104,7 +111,6 @@ color_map_function = colormaps[color_map]
 color_gradient_array = color_map_function(normalized_values)
 color_gradient_hex_array = [f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}" for r, g, b, _ in
                             color_gradient_array]
-
 
 if len(uniprotSequence) != len(coverage_array):
     st.error(f"Length of coverage array ({len(coverage_array)}) does not match length of UniProt sequence "
@@ -119,7 +125,6 @@ st.subheader(f"{predictions[0]['uniprotAccession']}|{predictions[0]['uniprotId']
 st.pyplot(plot_coverage_array(coverage_array, color_map))
 render_mol(pdb_file.content.decode("utf-8"), color_gradient_hex_array, pdb_style, bcolor, highlight_residues)
 
-
 # 2d representation
 
 sites = []
@@ -131,6 +136,8 @@ print(sites)
 
 # Create a colormap
 cmap = mpl.colormaps.get_cmap(color_map)
+
+
 def coverage_string(protein_cov_arr, stripped_protein_sequence, cmap, sites=None):
     # Find the maximum coverage value
     max_coverage = max(protein_cov_arr)
@@ -161,5 +168,6 @@ def coverage_string(protein_cov_arr, stripped_protein_sequence, cmap, sites=None
     protein_coverage += '</span>'
 
     return protein_coverage
+
 
 st.markdown(coverage_string(coverage_array, uniprotSequence, cmap, sites), unsafe_allow_html=True)
