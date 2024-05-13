@@ -169,5 +169,5 @@ def coverage_string(protein_cov_arr, stripped_protein_sequence, cmap, sites=None
 
     return protein_coverage
 
-
 st.markdown(coverage_string(coverage_array, uniprotSequence, cmap, sites), unsafe_allow_html=True)
+st.json(predictions[0], expanded=False)
