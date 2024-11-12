@@ -121,7 +121,7 @@ pdb_file = requests.get(pdb_url)
 
 description = predictions[0]['uniprotDescription']
 st.title(description)
-st.subheader(f"{predictions[0]['uniprotAccession']}|{predictions[0]['uniprotId']}")
+st.subheader(f"{'Reverse_' if reverse_protein else ''}{predictions[0]['uniprotAccession']}|{predictions[0]['uniprotId']}")
 st.pyplot(plot_coverage_array(coverage_array, color_map))
 render_mol(pdb_file.content.decode("utf-8"), color_gradient_hex_array, pdb_style, bcolor, highlight_residues)
 
