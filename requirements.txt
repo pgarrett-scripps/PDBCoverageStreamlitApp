@@ -9,3 +9,4 @@ streamlit==1.43.0
 streamlit-permalink @ git+https://github.com/pgarrett-scripps/streamlit-permalink@dda1482
 streamlit-js-eval==0.1.7
 requests==2.32.3
+biopython==1.85
