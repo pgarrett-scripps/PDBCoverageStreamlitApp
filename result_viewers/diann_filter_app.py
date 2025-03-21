@@ -4,9 +4,7 @@ import streamlit as st
 import pandas as pd
 import urllib.parse
 
-from util import serialize_redundant_peptides
-
-
+from ..util import serialize_peptides
 
 def main():
     st.title("Coverage App URL Generator")
@@ -47,7 +45,6 @@ def main():
 
         df = df[df['Sample.Name'].isin(selected_samples)]
 
-
         # Replace with the actual URL of your coverage app
         coverage_app_base_url = 'https://pdb-coverage.streamlit.app/'  # Update this URL
 
@@ -61,7 +58,7 @@ def main():
                 continue  # Skip if no peptides are available
 
             # Use the redundant peptide serializer
-            serialized_peptides = serialize_redundant_peptides(peptides)
+            serialized_peptides = serialize_peptides(peptides)
 
             # Construct query parameters
             params = {
@@ -90,19 +87,20 @@ def main():
         st.subheader("Generated URLs")
         st.dataframe(url_df,
                      column_config={
-            "URL": st.column_config.LinkColumn(
-                "URL",
-                width='small',
-            ),
-            "Peptide Count": st.column_config.NumberColumn(
-                "Peptide Count",
-            ),
-        },
+                         "URL": st.column_config.LinkColumn(
+                             "URL",
+                             width='small',
+                         ),
+                         "Peptide Count": st.column_config.NumberColumn(
+                             "Peptide Count",
+                         ),
+                     },
                      column_order=["Protein ID", "Peptide Count", "URL"],
                      use_container_width=True, hide_index=True)
 
     else:
         st.info("Please upload a data file to proceed.")
+
 
 if __name__ == '__main__':
     main()

@@ -1,171 +1,358 @@
 from urllib.error import HTTPError
-
 import numpy as np
 import requests
 import streamlit as st
+import streamlit_permalink as stp
 from matplotlib.pyplot import colormaps
-
-from constants import DEFAULT_PROTEIN_ID, DEFAULT_COVERAGE_ARRAY, AA_TO_THREE_LETTER_CODE, AAS, color_maps, \
-    DEFAULT_PEPTIDES
-from util import serialize_coverage_array, parse_coverage_array, get_predictions, render_mol, plot_coverage_array, \
-    serialize_peptides, parse_peptides, serialize_redundant_peptides, parse_redundant_peptides
+from Bio import PDB
 import peptacular as pt
+from streamlit_js_eval import get_page_location
 import matplotlib as mpl
 import matplotlib.colors as mcolors
 
-st.set_page_config(initial_sidebar_state="collapsed")
+from constants import DEFAULT_PROTEIN_ID, color_maps, DEFAULT_PEPTIDES
+from util import (
+    get_predictions,
+    render_mol,
+    plot_coverage_array,
+    compressor,
+    decompressor,
+    get_query_params_url,
+    shorten_url,
+)
 
-# Set defaults
-qp = st.query_params
-if "protein_id" not in qp:
-    qp["protein_id"] = DEFAULT_PROTEIN_ID
-if "input_type" not in qp:
-    qp["input_type"] = "coverage_array"
 
-if qp["input_type"] not in ["coverage_array", "peptides", "redundant_peptides"]:
-    st.error(f"Invalid input type: {qp['input_type']}")
-    st.stop()
+st.set_page_config(layout="centered", page_title="PDB Sequence Coverage")
 
-if 'input' not in qp:
-    if qp["input_type"] == "coverage_array" and "coverage_array" not in qp:
-        SERIALIZED_COVERAGE_ARRAY = serialize_coverage_array(DEFAULT_COVERAGE_ARRAY)
-        qp["input"] = SERIALIZED_COVERAGE_ARRAY
-    elif qp["input_type"] == "peptides" and "peptides" not in qp:
-        SERIALIZED_PEPTIDES = serialize_peptides(DEFAULT_PEPTIDES)
-        qp["input"] = SERIALIZED_PEPTIDES
-    elif qp["input_type"] == "redundant_peptides" and "redundant_peptides" not in qp:
-        SERIALIZED_REDUNDANT_PEPTIDES = serialize_redundant_peptides(DEFAULT_PEPTIDES)
-        qp["input"] = SERIALIZED_REDUNDANT_PEPTIDES
-    else:
-        st.error(f"Should not happen... Big oops.")
-        st.stop()
+top_window = st.container()
+bottom_window = st.container()
 
-if 'reverse_protein' not in qp:
-    qp["reverse_protein"] = False
+if "rerun" not in st.session_state:
+    st.session_state["rerun"] = False
+else:
+    if st.session_state["rerun"]:
+        st.session_state["rerun"] = False
+        st.rerun()
 
-container = st.container()
+if "saved_url_params" not in st.session_state:
+    st.session_state["saved_url_params"] = {}
+
+
+def change_input():
+
+    if input_type == "Protein ID":
+        url_params = {k: st.query_params.get_all(k) for k in st.query_params.keys()}
+        st.session_state["saved_url_params"] = url_params
+        st.query_params.clear()
+
+    if input_type == "PDB file":
+        if "saved_url_params" in st.session_state:
+            # update the saved_url_params
+            st.query_params.update(st.session_state["saved_url_params"])
+
+    st.query_params["input_type"] = st.session_state["input_type"]
+    st.session_state["rerun"] = True
+
 
 with st.sidebar:
-    color_map = st.selectbox("Choose a color map", color_maps)
-    bcolor = st.color_picker("Background color", "#FFFFFF")
-    selected_residue = st.multiselect("Select residue", AAS)
-    highlight_residues = [AA_TO_THREE_LETTER_CODE[aa].upper() for aa in selected_residue]
-    pdb_style = st.selectbox("PDB style", ['cartoon', 'stick', 'sphere', 'cross'])
-    binary_coverage = st.checkbox("Binary coverage", False)
+    st.title("PDB Sequence Coverage")
 
-    protein_id = st.text_input("Protein ID", qp["protein_id"])
+    st.caption(f"""
+    A 3D Protein Coverage Analyzer Tool. Made with 
+    [peptacular {pt.__version__}](https://github.com/pgarrett-scripps/peptacular): 
+    [![DOI](https://zenodo.org/badge/591504879.svg)](https://doi.org/10.5281/zenodo.15054278)""")
 
-    try:
-        predictions = get_predictions(protein_id)
-    except HTTPError as e:
-        predictions = []
+    input_type = stp.radio(
+        "Input type",
+        ("Protein ID", "PDB file"),
+        key="input_type",
+        horizontal=True,
+        stateful=True,
+        on_change=change_input,
+    )
 
-    if len(predictions) == 0:
-        container.error(f"No predictions found for protein {protein_id}")
+    pdb_content, title, sub_header, uniprotSequence = None, "", "", ""
+    if input_type == "PDB file":
+        is_stateful = False
+
+        # Clear input params
+        st.query_params.clear()
+        st.query_params["input_type"] = "PDB file"
+
+        pdb_file = st.file_uploader("Upload PDB file", type=["pdb"])
+
+        if pdb_file is not None:
+            pdb_content = pdb_file.read().decode("utf-8")
+
+            # save the pdb file to a temporary file
+            with open("temp.pdb", "w") as f:
+                f.write(pdb_content)
+
+            # Extract the protein sequence
+            parser = PDB.PDBParser(QUIET=True)
+            structure = parser.get_structure("uploaded_protein", "temp.pdb")
+
+            for model in structure:
+                for chain in model:
+                    for residue in chain:
+                        # Skip water and hetero atoms
+                        if residue.id[0] == " ":
+                            resname = residue.resname.strip()
+                            # Convert three-letter code to one-letter code
+                            one_letter = pt.constants.THREE_LETTER_CODE_TO_AA.get(
+                                resname.capitalize(), "X"
+                            )
+                            uniprotSequence += one_letter
+
+            title = pdb_file.name
+            sub_header = None
+
+    elif input_type == "Protein ID":
+        is_stateful = True
+
+        protein_id = stp.text_input(
+            "Protein ID",
+            key="protein_id",
+            value=DEFAULT_PROTEIN_ID,
+            stateful=is_stateful,
+        )
+
+        if protein_id:
+            try:
+                predictions = get_predictions(protein_id)
+            except HTTPError as e:
+                top_window.error(
+                    f"Error fetching predictions for protein {protein_id}: {e}"
+                )
+
+            if len(predictions) == 0:
+                top_window.error(f"No predictions found for protein {protein_id}")
+                st.stop()
+
+            elif len(predictions) > 1:
+                top_window.warning(
+                    f"Multiple predictions found for protein {protein_id}. Using the first one."
+                )
+
+            pdb_url = predictions[0]["pdbUrl"]
+            uniprotSequence = predictions[0]["uniprotSequence"]
+            pdb_content = requests.get(pdb_url).content.decode("utf-8")
+            description = predictions[0]["uniprotDescription"]
+            uniprotAccession = predictions[0]["uniprotAccession"]
+            uniprotId = predictions[0]["uniprotId"]
+            title = predictions[0]["uniprotDescription"]
+            sub_header = f"{uniprotAccession}|{uniprotId}"
+
+    peptide_str = stp.text_area(
+        "Peptides",
+        value=DEFAULT_PEPTIDES if is_stateful else None,
+        key="peptides",
+        height=300,
+        stateful=is_stateful,
+        compressor=compressor,
+        decompressor=decompressor,
+        compress=True,
+        placeholder="Enter peptides here, one per line.",
+    )
+
+    peptides = []
+    if peptide_str:
+        peptides = peptide_str.split("\n")
+
+
+    with st.expander("Additional Options"):
+        color_map = stp.selectbox(
+            "Choose a color map", color_maps, key="color_map", stateful=is_stateful
+        )
+        pdb_style = stp.selectbox(
+            "PDB style",
+            ["cartoon", "stick", "sphere", "cross"],
+            key="pdb_style",
+            stateful=is_stateful,
+        )
+        bcolor = stp.color_picker(
+            "Background color", "#FFFFFF", key="bcolor", stateful=is_stateful
+        )
+        selected_residue = stp.multiselect(
+            "Select residue",
+            pt.AMINO_ACIDS,
+            key="selected_residue",
+            stateful=is_stateful,
+        )
+        highlight_residues = [
+            pt.AA_TO_THREE_LETTER_CODE[aa].upper() for aa in selected_residue
+        ]
+        binary_coverage = stp.checkbox(
+            "Binary coverage", False, key="binary_coverage", stateful=is_stateful
+        )
+        reverse_protein = stp.checkbox(
+            "Reverse protein", key="reverse_protein", stateful=is_stateful
+        )
+        strip_mods = stp.checkbox("Strip mods", False, stateful=is_stateful)
+        filter_unique = stp.checkbox("Filter unique", False, stateful=is_stateful)
+
+with bottom_window:
+    page_loc = get_page_location()
+
+with top_window:
+
+    if is_stateful:
+        title_c, button_c = st.columns([3, 1], vertical_alignment="top")
+        with title_c:
+            st.header("Coverage Results")
+        with button_c:
+            url_btn = st.button(
+                "Generate URL",
+                key="generate_url",
+                type="primary",
+                use_container_width=True,
+            )
+
+        st.caption(
+            f"""**This pages URL automatically updates with your input, and can be shared with others. 
+                   You can optionally use the Generate TinyURL button to create a shortened URL.**""",
+            unsafe_allow_html=True,
+        )
+
+        st.divider()
+
+    if not uniprotSequence or not pdb_content:
+        st.error("Please provide a valid input (either a PDB file or a Protein ID).")
         st.stop()
-    elif len(predictions) > 1:
-        container.warning(f"Multiple predictions found for protein {protein_id}. Using the first one.")
-
-    pdb_url = predictions[0]['pdbUrl']
-    uniprotSequence = predictions[0]['uniprotSequence']
-
-    reverse_protein = st.checkbox("Reverse protein", value=qp["reverse_protein"].lower() == "true")
 
     if reverse_protein:
         uniprotSequence = uniprotSequence[::-1]
 
-    INPUT_TYPES = ["coverage_array", "peptides", "redundant_peptides"]
-    input_type = st.radio("Input type", INPUT_TYPES, index=INPUT_TYPES.index(qp["input_type"]), horizontal=True)
-    if input_type == "coverage_array":
-        coverage_array = np.array(parse_coverage_array(st.text_area("Coverage array", qp["input"])))
-    elif input_type == "peptides":
-        c1, c2 = st.columns(2)
-        strip_mods = c1.checkbox("Strip mods", False)
-        filter_unqiue = c2.checkbox("Filter unique", False)
-        peptides = parse_peptides(st.text_area("Peptides", qp["input"]))
-        if strip_mods:
-            peptides = [pt.strip_mods(peptide) for peptide in peptides]
-        if filter_unqiue:
-            peptides = list(set(peptides))
+    if strip_mods:
+        peptides = [pt.strip_mods(peptide) for peptide in peptides]
+    if filter_unique:
+        peptides = list(set(peptides))
 
-        coverage_array = np.array(pt.coverage(uniprotSequence, peptides, True, True))
-    elif input_type == "redundant_peptides":
-        c1, c2 = st.columns(2)
-        strip_mods = c1.checkbox("Strip mods", False)
-        filter_unqiue = c2.checkbox("Filter unique", False)
-        peptides = parse_redundant_peptides(st.text_area("Peptides", qp["input"]))
-        if strip_mods:
-            peptides = [pt.strip_mods(peptide) for peptide in peptides]
-        if filter_unqiue:
-            peptides = list(set(peptides))
-        coverage_array = np.array(pt.coverage(uniprotSequence, peptides, True, True))
+    # check if there are non mathcing peptides
+    missing_peptides = set()
+    for peptide in peptides:
+        if not pt.is_subsequence(peptide, uniprotSequence):
+            missing_peptides.add(peptide)
 
-if reverse_protein:
-    coverage_array = coverage_array[::-1]
+    if missing_peptides:
+        st.warning(f"Some peptides do not match the protein sequence!")
+        with st.expander("Show missing peptides"):
+            st.write(missing_peptides)
 
-if binary_coverage:
-    coverage_array = np.where(coverage_array > 0, 1, 0)
+    coverage_array = np.array(pt.coverage(uniprotSequence, peptides, True, True))
 
-normalized_values = (coverage_array - coverage_array.min()) / (coverage_array.max() - coverage_array.min())
-color_map_function = colormaps[color_map]
-color_gradient_array = color_map_function(normalized_values)
-color_gradient_hex_array = [f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}" for r, g, b, _ in
-                            color_gradient_array]
+    if reverse_protein:
+        coverage_array = coverage_array[::-1]
 
-if len(uniprotSequence) != len(coverage_array):
-    st.error(f"Length of coverage array ({len(coverage_array)}) does not match length of UniProt sequence "
-             f"({len(uniprotSequence)})")
-    st.stop()
+    if binary_coverage:
+        coverage_array = np.where(coverage_array > 0, 1, 0)
 
-pdb_file = requests.get(pdb_url)
+    normalized_values = (coverage_array - coverage_array.min()) / (
+        coverage_array.max() - coverage_array.min()
+    )
+    color_map_function = colormaps[color_map]
+    color_gradient_array = color_map_function(normalized_values)
+    color_gradient_hex_array = [
+        f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
+        for r, g, b, _ in color_gradient_array
+    ]
 
-description = predictions[0]['uniprotDescription']
-st.title(description)
-st.subheader(f"{'Reverse_' if reverse_protein else ''}{predictions[0]['uniprotAccession']}|{predictions[0]['uniprotId']}")
-st.pyplot(plot_coverage_array(coverage_array, color_map))
-render_mol(pdb_file.content.decode("utf-8"), color_gradient_hex_array, pdb_style, bcolor, highlight_residues)
+    if sum(coverage_array) == 0:
+        color_gradient_hex_array = ["#FFFFFF"] * len(color_gradient_hex_array)
 
-# 2d representation
+    if len(uniprotSequence) != len(coverage_array):
+        st.error(
+            f"Length of coverage array ({len(coverage_array)}) does not match length of UniProt sequence "
+            f"({len(uniprotSequence)})"
+        )
+        st.stop()
 
-sites = []
-for i, aa in enumerate(uniprotSequence):
-    if aa in selected_residue:
-        sites.append(i)
+    st.title(title, anchor='PDB_TITLE')
+    if sub_header:
+        st.subheader(sub_header)
+    st.pyplot(plot_coverage_array(coverage_array, color_map))
+    render_mol(
+        pdb_content, color_gradient_hex_array, pdb_style, bcolor, highlight_residues
+    )
 
-# Create a colormap
-cmap = mpl.colormaps.get_cmap(color_map)
+    # 2d representation
 
+    sites = []
+    for site, aa in enumerate(uniprotSequence):
+        if aa in selected_residue:
+            sites.append(site)
 
-def coverage_string(protein_cov_arr, stripped_protein_sequence, cmap, sites=None):
-    # Find the maximum coverage value
-    max_coverage = max(protein_cov_arr)
+    # Create a colormap
+    cmap = mpl.colormaps.get_cmap(color_map)
 
-    # Color all covered amino acids based on coverage and show index on hover, using a monospace font
-    protein_coverage = '<span style="font-family: Courier New, monospace; font-size: 16px;">'
-    for i, aa in enumerate(stripped_protein_sequence):
-        coverage = protein_cov_arr[i]
+    def coverage_string(protein_cov_arr, stripped_protein_sequence, cmap, sites=None):
+        # Find the maximum coverage value
+        max_coverage = max(protein_cov_arr)
 
-        # Normalize the coverage based on the maximum value
-        normalized_coverage = coverage / max_coverage
+        # Color all covered amino acids based on coverage and show index on hover, using a monospace font
+        protein_cov = (
+            '<span style="font-family: Courier New, monospace; font-size: 16px;">'
+        )
+        for i, aa in enumerate(stripped_protein_sequence):
+            coverage = protein_cov_arr[i]
 
-        # Get color from colormap
-        color = cmap(normalized_coverage)
-        hex_color = mcolors.to_hex(color)
+            # Normalize the coverage based on the maximum value
+            normalized_coverage = coverage / max_coverage
 
-        if coverage > 0 and max_coverage > 0:
-            if sites and i in sites:
-                protein_coverage += f'<span title="Index: {i + 1}; Coverage: {coverage}" style="background-color:red; color:{hex_color}; font-weight:900; padding:3px; margin:1px; border:1px solid #cccccc; border-radius:3px;">{aa}</span>'
+            # Get color from colormap
+            color = cmap(normalized_coverage)
+            hex_color = mcolors.to_hex(color)
+
+            if coverage > 0 and max_coverage > 0:
+                if sites and i in sites:
+                    protein_cov += (
+                        f'<span title="Index: {i + 1}; Coverage: {coverage}" style="background-color:red; '
+                        f"color:{hex_color}; font-weight:900; padding:3px; margin:1px; border:1px solid "
+                        f'#cccccc; border-radius:3px;">{aa}</span>'
+                    )
+                else:
+                    protein_cov += (
+                        f'<span title="Index: {i + 1}; Coverage: {coverage}" style="background-color'
+                        f":#e0e0ff; color:{hex_color}; font-weight:900; padding:3px; margin:1px; "
+                        f'border:1px solid #a0a0ff; border-radius:3px;">{aa}</span>'
+                    )
             else:
-                protein_coverage += f'<span title="Index: {i + 1}; Coverage: {coverage}" style="background-color:#e0e0ff; color:{hex_color}; font-weight:900; padding:3px; margin:1px; border:1px solid #a0a0ff; border-radius:3px;">{aa}</span>'
-        else:
-            if sites and i in sites:
-                protein_coverage += f'<span title="Index: {i + 1}" style="background-color:red; color:{hex_color}; font-weight:900; padding:3px; margin:1px; border:1px solid #cccccc; border-radius:3px;">{aa}</span>'
-            else:
-                # Style the non-covered amino acid for a polished look with a tooltip
-                protein_coverage += f'<span title="Index: {i + 1}" style="background-color:#f0f0f0; color:{hex_color}; font-weight:900; padding:3px; margin:1px; border:1px solid #cccccc; border-radius:3px;">{aa}</span>'
-    protein_coverage += '</span>'
+                if sites and i in sites:
+                    protein_cov += (
+                        f'<span title="Index: {i + 1}" style="background-color:red; color:{hex_color}; '
+                        f"font-weight:900; padding:3px; margin:1px; border:1px solid #cccccc;"
+                        f' border-radius:3px;">{aa}</span>'
+                    )
+                else:
+                    # Style the non-covered amino acid for a polished look with a tooltip
+                    protein_cov += (
+                        f'<span title="Index: {i + 1}" style="background-color:#f0f0f0; color:{hex_color}; '
+                        f"font-weight:900; padding:3px; margin:1px; border:1px solid #cccccc; "
+                        f'border-radius:3px;">{aa}</span>'
+                    )
+        protein_cov += "</span>"
 
-    return protein_coverage
+        return protein_cov
 
-st.markdown(coverage_string(coverage_array, uniprotSequence, cmap, sites), unsafe_allow_html=True)
-st.json(predictions[0], expanded=False)
+    st.markdown(
+        coverage_string(coverage_array, uniprotSequence, cmap, sites),
+        unsafe_allow_html=True,
+    )
+
+    if is_stateful:
+        st.json(predictions[0], expanded=False)
+
+        if page_loc and "origin" in page_loc:
+            url_origin = page_loc["origin"]
+            if url_btn:
+                url_params = {
+                    k: st.query_params.get_all(k) for k in st.query_params.keys()
+                }
+                page_url = f"{url_origin}{get_query_params_url(url_params)}"
+                short_url = shorten_url(page_url)
+
+                @st.dialog(title="Share your results")
+                def url_dialog(url):
+                    st.write(f"Shortened URL: {url}")
+
+                url_dialog(short_url)

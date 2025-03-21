@@ -1,83 +1,57 @@
 import json
 from collections import Counter
 from typing import Iterator
+from urllib.parse import quote_plus
 from urllib.request import urlopen
 
 import py3Dmol
+import requests
 import stmol
 from matplotlib import pyplot as plt
 import streamlit as st
 
-
-def serialize_redundant_peptides(peptides: list) -> str:
-    """Serialize the peptides from a list of strings to a string.
-
-    :param peptides: The peptides as a list of strings
-    :type peptides: list
-    :return: The peptides as a string
-    :rtype: str
-    """
-    # count peptides
-    peptide_counter = Counter(peptides)
-    return ",".join([f"{peptide};{redundancy}" for peptide, redundancy in peptide_counter.items()])
+from itertools import groupby
+from typing import List
 
 
-def parse_redundant_peptides(peptides: str) -> list:
-    """Parse the peptides from a string to a list of strings.
+def compressor(peptide_str: str) -> str:
+    """Compress consecutive duplicate peptides into a compact representation."""
+    if not peptide_str.strip():
+        return ""
 
-    :param peptides: The peptides as a string
-    :type peptides: str
-    :return: The peptides as a list of strings
-    :rtype: list
-    """
-    peptide_redundancies = peptides.split(",")
-    peptides = [pr.split(";")[0] for pr in peptide_redundancies]
-    redundancies = [int(pr.split(";")[1]) for pr in peptide_redundancies]
-    return [peptide for peptide, redundancy in zip(peptides, redundancies) for _ in range(redundancy)]
+    compressed = []
 
+    for peptide, group in groupby(peptide_str.splitlines()):
+        count = sum(1 for _ in group)
+        compressed.append(f"{peptide};{count}")
 
-def serialize_peptides(peptides: list) -> str:
-    """Serialize the peptides from a list of strings to a string.
-
-    :param peptides: The peptides as a list of strings
-    :type peptides: list
-    :return: The peptides as a string
-    :rtype: str
-    """
-    return ",".join(peptides)
+    return ','.join(compressed)
 
 
-def parse_peptides(peptides: str) -> list:
-    """Parse the peptides from a string to a list of strings.
+def decompressor(peptide_str: str) -> str:
+    """Decompress the compact peptide representation back into its original form."""
+    if not peptide_str.strip():
+        return ""
 
-    :param peptides: The peptides as a string
-    :type peptides: str
-    :return: The peptides as a list of strings
-    :rtype: list
-    """
-    return peptides.split(",")
+    try:
+        peptides = []
 
+        for pair in peptide_str.split(','):
+            peptide, count = pair.split(';')
+            peptides.extend([peptide] * int(count))
 
-def serialize_coverage_array(coverage_array: list) -> str:
-    """Serialize the coverage array from a list of integers to a string.
+        return '\n'.join(peptides)
 
-    :param coverage_array: The coverage array as a list of integers
-    :type coverage_array: list
-    :return: The coverage array as a string
-    :rtype: str
-    """
-    return ",".join(str(c) for c in coverage_array)
+    except (ValueError, IndexError) as e:
+        raise ValueError(f"Invalid compressed format: {peptide_str}") from e
 
 
-def parse_coverage_array(coverage_array: str) -> list:
-    """Parse the coverage array from a string to a list of integers.
-
-    :param coverage_array: The coverage array as a string
-    :type coverage_array: str
-    :return: The coverage array as a list of integers
-    :rtype: list
-    """
-    return [int(c) for c in coverage_array.split(",")]
+def serialize_peptides(peptides: List[str]) -> str:
+    """Serialize a list of peptides into a single string."""
+    # counter
+    peptide_counts = Counter(peptides)
+    serialized = ','.join([f"{peptide};{count}" for peptide, count in peptide_counts.items()])
+    return serialized
 
 
 def _get_predictions(qualifier: str) -> Iterator[dict]:
@@ -134,3 +108,48 @@ def plot_coverage_array(coverage_array, color_map):
     ax.set_title('Protein Coverage')
     ax.set_axis_off()
     return fig
+
+
+def get_query_params_url(params_dict):
+    """
+    Create url params from alist of parameters and a dictionary with values.
+
+    Args:
+        params_list (str) :
+            A list of parameters to get the value of from `params_dict`
+        parmas_dict (dict) :
+            A dict with values for the `parmas_list .
+        **kwargs :
+            Extra keyword args to add to the url
+    """
+    return "?" + "&".join(
+        [
+            f"{key}={quote_plus(str(value))}"
+            for key, values in params_dict.items()
+            for value in listify(values)
+        ]
+    )
+
+
+def listify(o=None):
+    if o is None:
+        res = []
+    elif isinstance(o, list):
+        res = o
+    elif isinstance(o, str):
+        res = [o]
+    else:
+        res = [o]
+    return res
+
+
+def shorten_url(url: str) -> str:
+    """Shorten a URL using TinyURL."""
+    api_url = f"http://tinyurl.com/api-create.php?url={url}"
+
+    try:
+        response = requests.get(api_url)
+        response.raise_for_status()
+        return response.text
+    except requests.RequestException as e:
+        return f"Error: {e}"

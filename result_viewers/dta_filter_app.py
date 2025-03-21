@@ -3,7 +3,7 @@ import filterframes
 import peptacular as pt
 
 from constants import PDB_APP_URL
-from util import serialize_redundant_peptides
+from util import serialize_peptides
 
 st.set_page_config(layout="wide")
 
@@ -42,7 +42,7 @@ for protein_group in protein_df['ProteinGroup'].unique():
     protein_group_to_peptides[protein_group] = peptides
 
 protein_df['SerializedPeptides'] = protein_df['ProteinGroup'].apply(
-    lambda x: serialize_redundant_peptides(protein_group_to_peptides[x]))
+    lambda x: serialize_peptides(protein_group_to_peptides[x]))
 
 
 def make_link(protein_id, serialized_peptides, reverse):
