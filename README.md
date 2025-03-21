@@ -3,7 +3,7 @@
 Made using [Peptacular](https://github.com/pgarrett-scripps/peptacular): [![DOI](https://zenodo.org/badge/591504879.svg)](https://doi.org/10.5281/zenodo.15054278)
 
 This repository contains the **PDB Coverage Streamlit app**, available online at:  
-🔗 [PDB Coverage App](https://pdb-coverage.streamlit.app/)
+🔗 [PDB Coverage App](https://pdb-cov.streamlit.app/)
 
 Additionally, it includes two result viewers for **IP2** and **DIANN** files, which parse identified proteins and peptides to generate PDB coverage-compatible links:  
 - 🔗 [DIANN Coverage Viewer](https://diann-coverage.streamlit.app/)  

@@ -1,14 +1,15 @@
 import os
 
 # Create a list of available color maps
-color_maps = ["coolwarm" ,"rainbow", "viridis", "plasma", "inferno", "magma", "cividis", "twilight", "twilight_shifted",
+COLOR_MAPS = list({"coolwarm" ,"rainbow", "viridis", "plasma", "inferno", "magma", "cividis", "twilight", "twilight_shifted",
               "turbo", "nipy_spectral", "gist_ncar", "gist_rainbow", "hsv", "flag", "prism", "ocean", "gist_stern",
               "gnuplot", "gnuplot2", "CMRmap", "cubehelix", "brg", "gist_earth", "terrain", "gist_heat", "hot",
               "afmhot", "copper", "pink", "spring", "autumn", "cool", "winter", "bwr", "seismic", "bone", "cividis",
               "twilight", "twilight_shifted", "turbo", "nipy_spectral", "gist_ncar", "gist_rainbow", "hsv", "flag",
               "prism", "ocean", "gist_stern", "gnuplot", "gnuplot2", "CMRmap", "cubehelix", "brg", "gist_earth",
               "terrain", "gist_heat", "hot", "afmhot", "copper", "pink", "spring", "autumn", "cool", "winter", "bwr",
-              "seismic", "bone"]
+              "seismic", "bone"})
+DEFAULT_COLOR_MAP = 'coolwarm'
 
 
 DEFAULT_PROTEIN_ID = 'P60174'

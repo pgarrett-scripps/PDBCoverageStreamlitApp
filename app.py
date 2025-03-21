@@ -10,7 +10,7 @@ from streamlit_js_eval import get_page_location
 import matplotlib as mpl
 import matplotlib.colors as mcolors
 
-from constants import DEFAULT_PROTEIN_ID, color_maps, DEFAULT_PEPTIDES
+from constants import DEFAULT_PROTEIN_ID, COLOR_MAPS, DEFAULT_PEPTIDES, DEFAULT_COLOR_MAP
 from util import (
     get_predictions,
     render_mol,
@@ -22,7 +22,8 @@ from util import (
 )
 
 
-st.set_page_config(layout="centered", page_title="PDB Sequence Coverage")
+st.set_page_config(layout="centered", page_title="PdbCov",
+                   page_icon=":dna:", initial_sidebar_state="auto")
 
 top_window = st.container()
 bottom_window = st.container()
@@ -57,7 +58,7 @@ def change_input():
 with st.sidebar:
     st.markdown(f"""
         <div style='text-align: center; padding: 15px; margin-top: 0px;'>
-            <h3 style='margin: 0; font-size: 1.5em; color: #333;'>PDB Sequence Coverage: 3D Protein Coverage Analyzer</h3>
+            <h3 style='margin: 0; font-size: 1.5em; color: #333;'>PdbCov: 3D Protein Coverage Analyzer</h3>
             <p style='font-size: 1.1em; line-height: 1.6; color: #555;'>
                 Powered by 
                 <a href="https://github.com/pgarrett-scripps/peptacular" target="_blank" style='color: #007BFF; text-decoration: none;'>
@@ -173,10 +174,9 @@ with st.sidebar:
     if peptide_str:
         peptides = peptide_str.split("\n")
 
-
     with st.expander("Additional Options"):
         color_map = stp.selectbox(
-            "Choose a color map", color_maps, key="color_map", stateful=is_stateful
+            "Choose a color map", options=COLOR_MAPS, key="color_map", stateful=is_stateful, index=COLOR_MAPS.index(DEFAULT_COLOR_MAP)
         )
         pdb_style = stp.selectbox(
             "PDB style",
