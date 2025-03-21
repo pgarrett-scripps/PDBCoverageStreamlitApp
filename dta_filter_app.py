@@ -6,11 +6,11 @@ from constants import PDB_APP_URL
 
 from util import serialize_peptides
 
-st.set_page_config(layout="wide", page_title="Dta-Pdb-Cov", page_icon=":microscope:")
+st.set_page_config(layout="wide", page_title="Dta-PdbCov", page_icon=":microscope:")
 
 with st.sidebar:
 
-    st.title("Dta-Pdb-Cov :microscope:")
+    st.title("DTA-PdbCov :microscope:")
 
     st.subheader("PdbCov Link Generator for DTASelectFilter Files")
 
