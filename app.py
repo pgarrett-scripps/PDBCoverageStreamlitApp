@@ -55,12 +55,26 @@ def change_input():
 
 
 with st.sidebar:
-    st.title("PDB Sequence Coverage")
-
-    st.caption(f"""
-    A 3D Protein Coverage Analyzer Tool. Made with 
-    [peptacular {pt.__version__}](https://github.com/pgarrett-scripps/peptacular): 
-    [![DOI](https://zenodo.org/badge/591504879.svg)](https://doi.org/10.5281/zenodo.15054278)""")
+    st.markdown(f"""
+        <div style='text-align: center; padding: 15px; margin-top: 0px;'>
+            <h3 style='margin: 0; font-size: 1.5em; color: #333;'>PDB Sequence Coverage: 3D Protein Coverage Analyzer</h3>
+            <p style='font-size: 1.1em; line-height: 1.6; color: #555;'>
+                Powered by 
+                <a href="https://github.com/pgarrett-scripps/peptacular" target="_blank" style='color: #007BFF; text-decoration: none;'>
+                    <strong>Peptacular</strong>
+                </a>. 
+                See the 
+                <a href="https://peptacular.readthedocs.io/en/latest/modules/getting_started.html#proforma-notation" 
+                target="_blank" style='color: #007BFF; text-decoration: none;'>
+                    Proforma Notation Docs
+                </a> for supported peptide syntax. To report any issues or suggest improvements, please visit the 
+                <a href="https://github.com/pgarrett-scripps/PDBCoverageStreamlitApp" 
+                target="_blank" style='color: #007BFF; text-decoration: none;'>
+                    PDB Coverage Github Repo.
+                </a>
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
 
     input_type = stp.radio(
         "Input type",
@@ -188,7 +202,7 @@ with st.sidebar:
         reverse_protein = stp.checkbox(
             "Reverse protein", key="reverse_protein", stateful=is_stateful
         )
-        strip_mods = stp.checkbox("Strip mods", False, stateful=is_stateful)
+        strip_mods = stp.checkbox("Strip mods", True, stateful=is_stateful)
         filter_unique = stp.checkbox("Filter unique", False, stateful=is_stateful)
 
 with bottom_window:
@@ -356,3 +370,31 @@ with top_window:
                     st.write(f"Shortened URL: {url}")
 
                 url_dialog(short_url)
+
+
+    st.divider()
+
+    st.markdown(f"""
+        <div style='display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-top: 0px solid #ddd;'>
+            <div style='text-align: left; font-size: 1.1em; color: #555;'>
+                <a href="https://github.com/pgarrett-scripps/PDBCoverageStreamlitApp" target="_blank" 
+                   style='text-decoration: none; color: #007BFF; font-weight: bold;'>
+                    PDBCoverage
+                </a>
+                <a href="https://doi.org/10.5281/zenodo.15066418" target="_blank" style="margin-left: 12px;">
+                    <img src="https://zenodo.org/badge/798509918.svg" alt="DOI" 
+                         style="vertical-align: middle; height: 20px;">
+                </a>
+            </div>
+            <div style='text-align: right; font-size: 1.1em; color: #555;'>
+                <a href="https://github.com/pgarrett-scripps/peptacular" target="_blank" 
+                   style='text-decoration: none; color: #007BFF; font-weight: bold;'>
+                    Peptacular
+                </a>
+                <a href="https://doi.org/10.5281/zenodo.15054278" target="_blank" style="margin-left: 12px;">
+                    <img src="https://zenodo.org/badge/591504879.svg" alt="DOI" 
+                         style="vertical-align: middle; height: 20px;">
+                </a>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)

@@ -1,7 +1,6 @@
 # PDB Coverage App
 
-Made with [peptacular v2.2.0](https://github.com/pgarrett-scripps/peptacular)  
-[![DOI](https://zenodo.org/badge/591504879.svg)](https://doi.org/10.5281/zenodo.15054278)
+Made using [Peptacular](https://github.com/pgarrett-scripps/peptacular): [![DOI](https://zenodo.org/badge/591504879.svg)](https://doi.org/10.5281/zenodo.15054278)
 
 This repository contains the **PDB Coverage Streamlit app**, available online at:  
 🔗 [PDB Coverage App](https://pdb-coverage.streamlit.app/)
@@ -26,3 +25,7 @@ cd PDBCoverageStreamlitApp
 pip install -r requirements.txt
 streamlit run app.py
 ```
+
+## Citation
+
+If you use [PDBCoverage](https://github.com/pgarrett-scripps/PDBCoverageStreamlitApp) in a publication, please cite: [![DOI](https://zenodo.org/badge/798509918.svg)](https://doi.org/10.5281/zenodo.15066418)
