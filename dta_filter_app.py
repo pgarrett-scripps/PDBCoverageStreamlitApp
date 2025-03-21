@@ -3,14 +3,24 @@ import filterframes
 import peptacular as pt
 
 from constants import PDB_APP_URL
+
 from util import serialize_peptides
 
-st.set_page_config(layout="wide")
+st.set_page_config(layout="wide", page_title="Dta-Pdb-Cov", page_icon=":microscope:")
 
-st.title("DTASelect Filter - PDB Sequence Coverage")
-st.caption("This app will take a DTASelect filter file and generate a list of proteins with links to the PDB Viewer")
+with st.sidebar:
 
-dta_select_file = st.file_uploader("Choose a DTASelect Filter File", type=['txt'])
+    st.title("Dta-Pdb-Cov :microscope:")
+
+    st.subheader("PdbCov Link Generator for DTASelectFilter Files")
+
+    st.caption("Upload a DTASelect filter file to generate links to the PDB Viewer for each protein.")
+
+    dta_select_file = st.file_uploader("Choose a DTASelect Filter File", type=['txt'])
+
+
+st.title("Protein Results")
+st.caption("Click on the link icons to open the PDB Viewer for each protein.")
 
 if dta_select_file is not None:
     _, peptide_df, protein_df, _ = filterframes.from_dta_select_filter(dta_select_file)
@@ -46,7 +56,7 @@ protein_df['SerializedPeptides'] = protein_df['ProteinGroup'].apply(
 
 
 def make_link(protein_id, serialized_peptides, reverse):
-    return f'{PDB_APP_URL}?protein_id={protein_id}&input={serialized_peptides}&input_type=redundant_peptides&reverse_protein={reverse}'
+    return f'{PDB_APP_URL}?input_type=Protein+ID&protein_id={protein_id}&peptides={serialized_peptides}&reverse_protein={reverse}'
 
 
 protein_df['Link'] = protein_df.apply(lambda x: make_link(x['Protein'], x['SerializedPeptides'], x['Reverse']), axis=1)
@@ -55,13 +65,24 @@ cols_to_keep = ['Locus', 'Descriptive Name', 'Sequence Count', 'Spectrum Count',
 
 st.dataframe(data=protein_df[cols_to_keep],
              hide_index=True,
+
              column_config={
-                 'Locus': st.column_config.TextColumn(width="medium"),
+                 'Locus': st.column_config.TextColumn(width="medium", pinned=False),
                  'Sequence Count': st.column_config.NumberColumn(width="small"),
                  'Spectrum Count': st.column_config.NumberColumn(width="small"),
                  'Sequence Coverage': st.column_config.NumberColumn(width="small"),
-                 'Length': st.column_config.NumberColumn(width="small"),
+                  #'Length': st.column_config.NumberColumn(width="small"),
                  'Descriptive Name': st.column_config.TextColumn(width="large"),
-                 'Link': st.column_config.LinkColumn(display_text="PDB Viewer")
+                 'Link': st.column_config.LinkColumn(display_text="🔗", pinned=True, width="small")
              },
              use_container_width=True)
+
+st.download_button(
+    label="Download Protein Data as CSV",
+    data=protein_df[cols_to_keep].to_csv(index=False).encode('utf-8'),
+    file_name='proteins.csv',
+    mime='text/csv',
+    on_click='ignore',
+    use_container_width=True,
+    type="primary",
+)

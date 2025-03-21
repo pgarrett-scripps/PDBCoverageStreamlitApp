@@ -4,7 +4,7 @@ import streamlit as st
 import pandas as pd
 import urllib.parse
 
-from ..util import serialize_peptides
+from .util import serialize_peptides
 
 def main():
     st.title("Coverage App URL Generator")

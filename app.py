@@ -159,7 +159,7 @@ with st.sidebar:
             sub_header = f"{uniprotAccession}|{uniprotId}"
 
     peptide_str = stp.text_area(
-        "Peptides",
+        "Peptides (Proforma 2.0 notation)",
         value=DEFAULT_PEPTIDES if is_stateful else None,
         key="peptides",
         height=300,
