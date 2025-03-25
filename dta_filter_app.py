@@ -60,12 +60,10 @@ def make_link(protein_id, serialized_peptides, reverse):
 
 
 protein_df['Link'] = protein_df.apply(lambda x: make_link(x['Protein'], x['SerializedPeptides'], x['Reverse']), axis=1)
-
 cols_to_keep = ['Locus', 'Descriptive Name', 'Sequence Count', 'Spectrum Count', 'Sequence Coverage', 'Length', 'Link']
 
 st.dataframe(data=protein_df[cols_to_keep],
              hide_index=True,
-
              column_config={
                  'Locus': st.column_config.TextColumn(width="medium", pinned=False),
                  'Sequence Count': st.column_config.NumberColumn(width="small"),
