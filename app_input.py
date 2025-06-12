@@ -377,7 +377,7 @@ def get_input() -> CoverageAppConfig:
 
     cov_input = None
     if input_type == PROTEIN_ID_TYPE:
-        protein_id = st.text_input(
+        protein_id = stp.text_input(
             "Protein ID",
             value=DEFAULT_PROTEIN_ID,
             help="Enter the Protein ID (e.g., P12345).",
@@ -393,7 +393,7 @@ def get_input() -> CoverageAppConfig:
         )
         cov_input = PDBFile(pdb_file=pdb_file)
     elif input_type == PROTEIN_SEQUENCE_TYPE:
-        sequence = st.text_area(
+        sequence = stp.text_area(
             "Protein Sequence",
             value=DEFAULT_PROTEIN_SEQUENCE,
             help="Enter the protein sequence.",
@@ -404,7 +404,7 @@ def get_input() -> CoverageAppConfig:
         raise ValueError("Invalid input type selected.")
     
     # Get peptides input
-    peptides_input = st.text_area(
+    peptides_input = stp.text_area(
         "Peptides",
         value=DEFAULT_PEPTIDES,
         help="Enter the peptides to visualize coverage, separated by new lines.",
