@@ -410,15 +410,21 @@ def get_input() -> CoverageAppConfig:
     
     # Get peptides input
     peptides_input = stp.text_area(
-        "Peptides",
+        "Peptides (Proforma 2.0 notation)",
         value=DEFAULT_PEPTIDES,
         help="Enter the peptides to visualize coverage, separated by new lines.",
         key="peptides",
+        height=400,
         compressor=compressor,
         decompressor=decompressor,
+        compress=True
     )
 
-    peptides = peptides_input.splitlines()
+    peptides = []
+    if peptides_input:
+        peptides = peptides_input.split("\n")
+
+    peptides = [p.strip() for p in peptides]
 
     reverse = stp.checkbox(
         "Reverse Protein Sequence",
