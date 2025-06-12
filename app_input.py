@@ -121,21 +121,12 @@ class ProteinID(InputType):
     @property
     def title(self) -> Optional[str]:
         """Return a description of the input type."""
-        if "uniprotDescription" not in self.predictions[0]:
-            raise ValueError(
-                f"No description found for Protein ID {self.protein_id}."
-            )
         return self.predictions[0].get("uniprotDescription", None)
     
     @property
     def subtitle(self) -> Optional[str]:
-        if "uniprotAccession" not in self.predictions[0] or "uniprotId" not in self.predictions[0]:
-            raise ValueError(
-                f"No UniProt accession or ID found for Protein ID {self.protein_id}."
-            )
         uniprotAccession = self.predictions[0].get("uniprotAccession", None)
         uniprotId = self.predictions[0].get("uniprotId", None)
-
         return f"{uniprotAccession}|{uniprotId}"
 
     
@@ -154,14 +145,20 @@ class PDBFile(InputType):
 
     def setup(self):
         if self.pdb_file is not None:
-            self._pdb_content = self.pdb_file.read().decode("utf-8")
+            self._pdb_content = self.pdb_file.read()
 
             # Create temporary PDB file using context manager
             with tempfile.NamedTemporaryFile(suffix='.pdb', delete=True) as temp_pdb:
-                temp_pdb.write(self._pdb_content)
+                # Handle both string and bytes content
+                if isinstance(self._pdb_content, str):
+                    temp_pdb.write(self._pdb_content.encode('utf-8'))
+                else:
+                    temp_pdb.write(self._pdb_content)
+                temp_pdb.flush()  # Ensure all data is written to disk
                 # Extract the protein sequence
+                
                 parser = PDB.PDBParser(QUIET=True)
-                structure = parser.get_structure("uploaded_protein", "temp.pdb")
+                structure = parser.get_structure("uploaded_protein", temp_pdb.name)
 
                 _protein_sequence = ""
                 for model in structure:
@@ -179,6 +176,7 @@ class PDBFile(InputType):
                 self._protein_sequence = _protein_sequence
                 self._title = self.pdb_file.name
                 self._subtitle = None
+            self._pdb_content = self._pdb_content.decode("utf-8") if isinstance(self._pdb_content, bytes) else self._pdb_content
         else:
             raise ValueError("PDB file cannot be None. Please upload a valid PDB file.")
 
@@ -207,8 +205,6 @@ class PDBFile(InputType):
     @property
     def subtitle(self) -> Optional[str]:
         """Return the UniProt accession if available."""
-        if self._subtitle is None:
-            raise ValueError("Subtitle is not available. Please check the PDB file.")
         return self._subtitle
 
 class ProteinSequence(InputType):
@@ -255,7 +251,8 @@ class CoverageAppConfig:
                  selected_residue: List[str],
                 binary_coverage: bool,
                 strip_mods: bool,
-                filter_unique: bool):
+                filter_unique: bool,
+                auto_spin: bool):
         
         self.input_type = input_type
         self.peptides = peptides
@@ -267,6 +264,7 @@ class CoverageAppConfig:
         self.binary_coverage = binary_coverage
         self.strip_mods = strip_mods
         self.filter_unique = filter_unique
+        self.auto_spin = auto_spin
 
 
     def setup(self):
@@ -292,6 +290,9 @@ class CoverageAppConfig:
         
         if self.filter_unique:
             peptides = list(set(peptides))
+
+        # remove ambiguity
+        peptides = [pt.strip_mods(p) for p in peptides]
         
         return peptides
 
@@ -474,6 +475,13 @@ def get_input() -> CoverageAppConfig:
                                  help="Filter unique peptides before coverage calculation."
     )
 
+    auto_spin = stp.checkbox(
+        "Auto-spin",
+        value=True,
+        help="Enable auto-spin for the PDB structure visualization.",
+        key="auto_spin",
+    )
+
 
     return CoverageAppConfig(
         input_type=cov_input,
@@ -486,4 +494,5 @@ def get_input() -> CoverageAppConfig:
         binary_coverage=binary_coverage,
         strip_mods=strip_mods,
         filter_unique=filter_unique, 
+        auto_spin=auto_spin
     )

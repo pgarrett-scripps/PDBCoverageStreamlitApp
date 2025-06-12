@@ -80,7 +80,7 @@ def get_predictions(qualifier: str) -> list:
     return list(_get_predictions(qualifier))
 
 
-def render_mol(pdb, cov_arr, pdb_style, bcolor, highlight_residues):
+def render_mol(pdb, cov_arr, pdb_style, bcolor, highlight_residues, auto_spin):
     view = py3Dmol.view()
     view.addModel(pdb, 'pdb')
     view.setStyle({}, {pdb_style: {}})
@@ -94,6 +94,10 @@ def render_mol(pdb, cov_arr, pdb_style, bcolor, highlight_residues):
     view.addResLabels({'resn': highlight_residues, })
     stmol.add_hover(view)
 
+    # Add auto-spin feature
+    if auto_spin:
+        view.spin(True)
+    
     view.zoomTo()
 
     stmol.showmol(view, height=500, width=700)

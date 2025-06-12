@@ -40,6 +40,12 @@ try:
     cov_input.setup()
 except Exception as e:
     st.error(f"Error setting up input: {e}")
+
+    # print trace
+    import traceback
+    traceback.print_exc()
+
+    
     should_render = False
     
 if should_render:
@@ -59,7 +65,8 @@ if should_render:
             cov_input.color_gradient_hex_array, 
             cov_input.pdb_style, 
             cov_input.bcolor, 
-            cov_input.highlight_residues
+            cov_input.highlight_residues,
+            cov_input.auto_spin
         )
 
     st.markdown(
