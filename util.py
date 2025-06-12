@@ -234,3 +234,25 @@ def show_footer():
             </div>
         </div>
     """, unsafe_allow_html=True)
+
+def display_header():
+    st.markdown(f"""
+        <div style='text-align: center; padding: 15px; margin-top: 0px;'>
+            <h3 style='margin: 0; font-size: 1.5em; color: #333;'>PdbCov: 3D Protein Coverage Analyzer</h3>
+            <p style='font-size: 1.1em; line-height: 1.6; color: #555;'>
+                Powered by 
+                <a href="https://github.com/pgarrett-scripps/peptacular" target="_blank" style='color: #007BFF; text-decoration: none;'>
+                    <strong>Peptacular</strong>
+                </a>. 
+                See the 
+                <a href="https://peptacular.readthedocs.io/en/latest/modules/getting_started.html#proforma-notation" 
+                target="_blank" style='color: #007BFF; text-decoration: none;'>
+                    Proforma Notation Docs
+                </a> for supported peptide syntax. To report any issues or suggest improvements, please visit the 
+                <a href="https://github.com/pgarrett-scripps/PDBCoverageStreamlitApp" 
+                target="_blank" style='color: #007BFF; text-decoration: none;'>
+                    PDB Coverage Github Repo.
+                </a>
+            </p>
+        </div>
+    """, unsafe_allow_html=True)

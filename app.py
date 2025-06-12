@@ -16,6 +16,7 @@ from app_input import get_input
 from constants import DEFAULT_PROTEIN_ID, COLOR_MAPS, DEFAULT_PEPTIDES, DEFAULT_COLOR_MAP, DEFAULT_PROTEIN_SEQUENCE
 from util import (
     coverage_string,
+    display_header,
     get_predictions,
     render_mol,
     plot_coverage_array,
@@ -31,6 +32,7 @@ st.set_page_config(layout="centered", page_title="PdbCov",
 
 
 with st.sidebar:
+    display_header()
     cov_input = get_input()
 
 should_render = True

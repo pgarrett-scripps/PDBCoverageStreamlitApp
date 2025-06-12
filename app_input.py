@@ -403,6 +403,7 @@ def get_input() -> CoverageAppConfig:
             value=DEFAULT_PROTEIN_SEQUENCE,
             help="Enter the protein sequence.",
             key="protein_sequence",
+            height=150,
         )
         cov_input = ProteinSequence(sequence=sequence)
     else:
@@ -414,7 +415,7 @@ def get_input() -> CoverageAppConfig:
         value=DEFAULT_PEPTIDES,
         help="Enter the peptides to visualize coverage, separated by new lines.",
         key="peptides",
-        height=400,
+        height=300,
         compressor=compressor,
         decompressor=decompressor,
         compress=True
