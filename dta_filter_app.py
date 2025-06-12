@@ -1,4 +1,5 @@
 import streamlit as st
+import streamlit_permalink as stp
 import filterframes
 import peptacular as pt
 
@@ -29,13 +30,14 @@ if dta_select_file is not None:
                                                                                   {'charge': x['Charge']}), axis=1)
     peptide_df['StrippedProformaSequence'] = peptide_df['ProformaSequence'].apply(pt.strip_mods)
     protein_df['Locus Comps'] = protein_df['Locus'].str.split('|')
+    
     # drop cols where there are not 3 values
-    protein_df = protein_df[protein_df['Locus Comps'].apply(len) == 3]
-    protein_df.reset_index(drop=True, inplace=True)
+    #protein_df = protein_df[protein_df['Locus Comps'].apply(len) == 3]
+    #protein_df.reset_index(drop=True, inplace=True)
 
-    protein_df['Database'] = protein_df['Locus Comps'].apply(lambda x: x[0])
-    protein_df['Protein'] = protein_df['Locus Comps'].apply(lambda x: x[1])
-    protein_df['Gene'] = protein_df['Locus Comps'].apply(lambda x: x[2])
+    protein_df['Database'] = protein_df['Locus Comps'].apply(lambda x: x[0] if len(x) == 3 else None)
+    protein_df['Protein'] = protein_df['Locus Comps'].apply(lambda x: x[1] if len(x) == 3 else None)
+    protein_df['Gene'] = protein_df['Locus Comps'].apply(lambda x: x[2] if len(x) == 3 else None)
     protein_df['Sequence Coverage'] = protein_df['Sequence Coverage'].str.rstrip('%').astype('float')
     protein_df['Reverse'] = protein_df['Database'].str.contains('reverse', case=False)
 else:
@@ -56,8 +58,15 @@ protein_df['SerializedPeptides'] = protein_df['ProteinGroup'].apply(
 
 
 def make_link(protein_id, serialized_peptides, reverse):
-    return f'{PDB_APP_URL}?input_type=Protein+ID&protein_id={protein_id}&peptides={serialized_peptides}&reverse_protein={reverse}'
 
+    params = {
+        'input_type': 'Protein ID',
+        'protein_id': protein_id,
+        'peptides': serialized_peptides,
+        'reverse_protein': reverse
+    }
+
+    return stp.create_url(PDB_APP_URL, params)
 
 protein_df['Link'] = protein_df.apply(lambda x: make_link(x['Protein'], x['SerializedPeptides'], x['Reverse']), axis=1)
 cols_to_keep = ['Locus', 'Descriptive Name', 'Sequence Count', 'Spectrum Count', 'Sequence Coverage', 'Length', 'Link']

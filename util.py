@@ -153,3 +153,84 @@ def shorten_url(url: str) -> str:
         return response.text
     except requests.RequestException as e:
         return f"Error: {e}"
+    
+
+def coverage_string(protein_cov_arr, stripped_protein_sequence, cmap, sites=None):
+    import matplotlib.colors as mcolors
+
+    # Find the maximum coverage value
+    max_coverage = max(protein_cov_arr)
+
+    # Color all covered amino acids based on coverage and show index on hover, using a monospace font
+    protein_cov = (
+        '<span style="font-family: Courier New, monospace; font-size: 16px;">'
+    )
+    for i, aa in enumerate(stripped_protein_sequence):
+        coverage = protein_cov_arr[i]
+
+        # Normalize the coverage based on the maximum value
+        normalized_coverage = coverage / max_coverage
+
+        # Get color from colormap
+        color = cmap(normalized_coverage)
+        hex_color = mcolors.to_hex(color)
+
+        if coverage > 0 and max_coverage > 0:
+            if sites and i in sites:
+                protein_cov += (
+                    f'<span title="Index: {i + 1}; Coverage: {coverage}" style="background-color:red; '
+                    f"color:{hex_color}; font-weight:900; padding:3px; margin:1px; border:1px solid "
+                    f'#cccccc; border-radius:3px;">{aa}</span>'
+                )
+            else:
+                protein_cov += (
+                    f'<span title="Index: {i + 1}; Coverage: {coverage}" style="background-color'
+                    f":#e0e0ff; color:{hex_color}; font-weight:900; padding:3px; margin:1px; "
+                    f'border:1px solid #a0a0ff; border-radius:3px;">{aa}</span>'
+                )
+        else:
+            if sites and i in sites:
+                protein_cov += (
+                    f'<span title="Index: {i + 1}" style="background-color:red; color:{hex_color}; '
+                    f"font-weight:900; padding:3px; margin:1px; border:1px solid #cccccc;"
+                    f' border-radius:3px;">{aa}</span>'
+                )
+            else:
+                # Style the non-covered amino acid for a polished look with a tooltip
+                protein_cov += (
+                    f'<span title="Index: {i + 1}" style="background-color:#f0f0f0; color:{hex_color}; '
+                    f"font-weight:900; padding:3px; margin:1px; border:1px solid #cccccc; "
+                    f'border-radius:3px;">{aa}</span>'
+                )
+    protein_cov += "</span>"
+
+    return protein_cov
+
+
+def show_footer():
+    st.divider()
+
+    st.markdown(f"""
+        <div style='display: flex; justify-content: space-between; align-items: center; padding: 15px 0; border-top: 0px solid #ddd;'>
+            <div style='text-align: left; font-size: 1.1em; color: #555;'>
+                <a href="https://github.com/pgarrett-scripps/PDBCoverageStreamlitApp" target="_blank" 
+                   style='text-decoration: none; color: #007BFF; font-weight: bold;'>
+                    PDBCoverage
+                </a>
+                <a href="https://doi.org/10.5281/zenodo.15066418" target="_blank" style="margin-left: 12px;">
+                    <img src="https://zenodo.org/badge/798509918.svg" alt="DOI" 
+                         style="vertical-align: middle; height: 20px;">
+                </a>
+            </div>
+            <div style='text-align: right; font-size: 1.1em; color: #555;'>
+                <a href="https://github.com/pgarrett-scripps/peptacular" target="_blank" 
+                   style='text-decoration: none; color: #007BFF; font-weight: bold;'>
+                    Peptacular
+                </a>
+                <a href="https://doi.org/10.5281/zenodo.15054278" target="_blank" style="margin-left: 12px;">
+                    <img src="https://zenodo.org/badge/591504879.svg" alt="DOI" 
+                         style="vertical-align: middle; height: 20px;">
+                </a>
+            </div>
+        </div>
+    """, unsafe_allow_html=True)
