@@ -9,11 +9,16 @@ from requests import HTTPError
 import requests
 import streamlit_permalink as stp
 import streamlit as st
-from util import get_predictions
 from constants import *
 import tempfile
 import matplotlib.colors as mcolors
 from Bio import PDB
+
+from util import (
+    get_predictions,
+    compressor,
+    decompressor,
+)
 
 PROTEIN_ID_TYPE = "Protein ID"
 PDB_FILE_TYPE = "PDB file"
@@ -409,6 +414,8 @@ def get_input() -> CoverageAppConfig:
         value=DEFAULT_PEPTIDES,
         help="Enter the peptides to visualize coverage, separated by new lines.",
         key="peptides",
+        compressor=compressor,
+        decompressor=decompressor,
     )
 
     peptides = peptides_input.splitlines()
