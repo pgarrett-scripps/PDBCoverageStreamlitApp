@@ -252,7 +252,9 @@ class CoverageAppConfig:
                 binary_coverage: bool,
                 strip_mods: bool,
                 filter_unique: bool,
-                auto_spin: bool):
+                auto_spin: bool,
+                user_title: Optional[str],
+                user_subtitle: Optional[str]):
         
         self.input_type = input_type
         self.peptides = peptides
@@ -265,6 +267,8 @@ class CoverageAppConfig:
         self.strip_mods = strip_mods
         self.filter_unique = filter_unique
         self.auto_spin = auto_spin
+        self.user_title = user_title
+        self.user_subtitle = user_subtitle
 
 
     def setup(self):
@@ -311,11 +315,15 @@ class CoverageAppConfig:
     @property
     def title(self) -> Optional[str]:
         """Return a description of the input type."""
+        if self.user_title:
+            return self.user_title
         return self.input_type.title
     
     @property
     def subtitle(self) -> Optional[str]:
         """Return the UniProt accession from the input type."""
+        if self.user_subtitle:
+            return self.user_subtitle
         return self.input_type.subtitle
     
     @property
@@ -482,6 +490,16 @@ def get_input() -> CoverageAppConfig:
         key="auto_spin",
     )
 
+    user_title = stp.text_input(
+        "Title",
+        help="Enter a title for the coverage viewer.",
+        key="title",
+    )
+    user_subtitle = stp.text_input(
+        "Subtitle",
+        help="Enter a subtitle for the coverage viewer.",
+        key="subtitle",
+    )
 
     return CoverageAppConfig(
         input_type=cov_input,
@@ -494,5 +512,7 @@ def get_input() -> CoverageAppConfig:
         binary_coverage=binary_coverage,
         strip_mods=strip_mods,
         filter_unique=filter_unique, 
-        auto_spin=auto_spin
+        auto_spin=auto_spin,
+        user_title=user_title,
+        user_subtitle=user_subtitle,
     )
