@@ -1,29 +1,13 @@
-from dataclasses import dataclass
-from typing import Any, List, Literal, Optional
-from urllib.error import HTTPError
-import numpy as np
-import requests
 import streamlit as st
-import streamlit_permalink as stp
-from matplotlib.pyplot import colormaps
-from Bio import PDB
-import peptacular as pt
-from streamlit_js_eval import get_page_location
-import matplotlib as mpl
-import matplotlib.colors as mcolors
+
 
 from app_input import get_input
-from constants import DEFAULT_PROTEIN_ID, COLOR_MAPS, DEFAULT_PEPTIDES, DEFAULT_COLOR_MAP, DEFAULT_PROTEIN_SEQUENCE
 from util import (
+    apply_expanded_sidebar,
     coverage_string,
     display_header,
-    get_predictions,
     render_mol,
     plot_coverage_array,
-    compressor,
-    decompressor,
-    get_query_params_url,
-    shorten_url,
     show_footer,
 )
 
@@ -32,6 +16,7 @@ st.set_page_config(layout="centered", page_title="PdbCov",
 
 
 with st.sidebar:
+    apply_expanded_sidebar()
     display_header()
     cov_input = get_input()
 

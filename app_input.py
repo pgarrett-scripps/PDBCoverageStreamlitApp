@@ -449,13 +449,21 @@ def get_input() -> CoverageAppConfig:
     else:
         raise ValueError("Invalid input type selected.")
     
+
+    reverse = stp.toggle(
+        "Reverse Protein Sequence",
+        value=False,
+        help="Reverse the protein sequence for visualization.",
+        key="reverse_protein",
+    )
+
     # Get peptides input
     peptides_input = stp.text_area(
         "Peptides (Proforma 2.0 notation)",
         value=DEFAULT_PEPTIDES,
         help="Enter the peptides to visualize coverage, separated by new lines.",
         key="peptides",
-        height=300,
+        height=200,
         compressor=compressor,
         decompressor=decompressor,
         compress=True
@@ -467,94 +475,121 @@ def get_input() -> CoverageAppConfig:
 
     peptides = [p.strip() for p in peptides]
 
-    reverse = stp.checkbox(
-        "Reverse Protein Sequence",
-        value=False,
-        help="Reverse the protein sequence for visualization.",
-        key="reverse_protein",
-    )
 
-    color_map = stp.selectbox(
-        "Choose a color map", 
-        options=COLOR_MAPS, 
-        index=COLOR_MAPS.index(DEFAULT_COLOR_MAP),
-        help="Select a color map for visualizing coverage.",
-        key="color_map", 
-    )
 
-    pdb_style = stp.selectbox(
-        "PDB style",
-        ["cartoon", "stick", "sphere", "cross"],
-        key="pdb_style",
-    )
-    bcolor = stp.color_picker(
-        "Background color", 
-        "#FFFFFF", 
-        key="bcolor", 
-    )
-    selected_residue = stp.multiselect(
-        "Select residue",
-        pt.AMINO_ACIDS,
-        key="selected_residue",
-    )
+    c1, c2 = st.columns(2, vertical_alignment="bottom")
 
-    binary_coverage = stp.checkbox(
-        "Binary coverage", 
-        False, 
-        key="binary_coverage",
-    )
-    strip_mods = stp.checkbox("Strip mods", 
-                              True,
-                              key="strip_mods",
-                              help="Strip modifications from peptides before coverage calculation."
-    )
-    filter_unique = stp.checkbox("Filter unique", 
-                                 True,
-                                 key="filter_unique",
-                                 help="Filter unique peptides before coverage calculation."
-    )
+    with c1:
+        color_map = stp.selectbox(
+            "Choose a color map", 
+            options=COLOR_MAPS, 
+            index=COLOR_MAPS.index(DEFAULT_COLOR_MAP),
+            help="Select a color map for visualizing coverage.",
+            key="color_map", 
+        )
 
-    auto_spin = stp.checkbox(
-        "Auto-spin",
-        value=True,
-        help="Enable auto-spin for the PDB structure visualization.",
-        key="auto_spin",
-    )
+    with c2:
+        pdb_style = stp.selectbox(
+            "PDB style",
+            ["cartoon", "stick", "sphere", "cross"],
+            key="pdb_style",
+        )
 
-    user_title = stp.text_input(
-        "Title",
-        help="Enter a title for the coverage viewer.",
-        key="title",
-    )
-    user_subtitle = stp.text_input(
-        "Subtitle",
-        help="Enter a subtitle for the coverage viewer.",
-        key="subtitle",
-    )
+    c1, c2 = st.columns([1, 3], vertical_alignment="bottom")
+
+    with c1:
+        bcolor = stp.color_picker(
+            "Background", 
+            "#FFFFFF", 
+            key="bcolor", 
+        )
+    with c2:
+        selected_residue = stp.multiselect(
+            "Select residue",
+            pt.AMINO_ACIDS,
+            key="selected_residue",
+        )
+
+    c1, c2 = st.columns(2, vertical_alignment="bottom")
+
+    with c1:
+        binary_coverage = stp.checkbox(
+            "Binary coverage", 
+            False, 
+            key="binary_coverage",
+        )
+
+        auto_spin = stp.checkbox(
+            "Auto-spin",
+            value=True,
+            help="Enable auto-spin for the PDB structure visualization.",
+            key="auto_spin",
+        )
+
+    with c2:
+        strip_mods = stp.checkbox("Strip mods", 
+                                False,
+                                key="strip_mods",
+                                help="Strip modifications from peptides before coverage calculation."
+        )
+        filter_unique = stp.checkbox("Filter unique", 
+                                    False,
+                                    key="filter_unique",
+                                    help="Filter unique peptides before coverage calculation."
+        )
+
+
+    with st.expander('User-defined Title and Subtitle', expanded=False):
+        user_title = stp.text_input(
+            label="Title",
+            help="Enter a title for the coverage viewer.",
+            key="title",
+        )
+        user_subtitle = stp.text_input(
+            label="Subtitle",
+            help="Enter a subtitle for the coverage viewer.",
+            key="subtitle",
+        )
 
     # Colorbar min/max controls
-    st.subheader("Colorbar Range")
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        colorbar_min = stp.number_input(
-            "Colorbar Min",
-            value=None,
-            min_value=0,
-            step=1,
-            help="Set minimum value for colorbar scaling. Leave empty for auto-scaling.",
-            key="colorbar_min",
-        )
-    
-    with col2:
-        colorbar_max = stp.number_input(
-            "Colorbar Max", 
-            value=None,
-            min_value=0,
-            step=1,
-            help="Set maximum value for colorbar scaling. Leave empty for auto-scaling.",
-            key="colorbar_max",
-        )
+    with st.expander("Colorbar Settings", expanded=False):
+        col1, col2 = st.columns(2)
+        
+        with col1:
+
+            if st.button("Reset Colorbar Min", use_container_width=True):
+                # Reset colorbar min and max to None
+                stp.number_input.set_url_value(
+                    url_key="colorbar_min", 
+                    value=None, 
+                )
+
+            colorbar_min = stp.number_input(
+                "Colorbar Min",
+                value=None,
+                min_value=0,
+                step=1,
+                help="Set minimum value for colorbar scaling. Leave empty for auto-scaling.",
+                key="colorbar_min",
+            )
+        
+        with col2:
+
+            if st.button("Reset Colorbar Max", use_container_width=True):
+                # Reset colorbar max to None
+                stp.number_input.set_url_value(
+                    url_key="colorbar_max", 
+                    value=None, 
+                )
+
+            colorbar_max = stp.number_input(
+                "Colorbar Max", 
+                value=None,
+                min_value=0,
+                step=1,
+                help="Set maximum value for colorbar scaling. Leave empty for auto-scaling.",
+                key="colorbar_max",
+            )
 
     return CoverageAppConfig(
         input_type=cov_input,

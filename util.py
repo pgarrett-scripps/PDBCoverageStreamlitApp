@@ -248,3 +248,15 @@ def display_header():
             </p>
         </div>
     """, unsafe_allow_html=True)
+
+def apply_expanded_sidebar():
+    st.markdown(
+    """
+    <style>
+        section[data-testid="stSidebar"] {
+            width: 600px !important; # Set the width to your desired value
+        }
+    </style>
+    """,
+    unsafe_allow_html=True,
+    )
