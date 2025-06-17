@@ -254,7 +254,9 @@ class CoverageAppConfig:
                 filter_unique: bool,
                 auto_spin: bool,
                 user_title: Optional[str],
-                user_subtitle: Optional[str]):
+                user_subtitle: Optional[str],
+                colorbar_min: Optional[float],
+                colorbar_max: Optional[float]):
         
         self.input_type = input_type
         self.peptides = peptides
@@ -269,6 +271,8 @@ class CoverageAppConfig:
         self.auto_spin = auto_spin
         self.user_title = user_title
         self.user_subtitle = user_subtitle
+        self.colorbar_min = colorbar_min
+        self.colorbar_max = colorbar_max
 
 
     def setup(self):
@@ -329,7 +333,7 @@ class CoverageAppConfig:
     @property
     def coverage_array(self) -> np.ndarray:
         """Return the coverage array based on the peptides and protein sequence."""
-        coverage_arr = np.array(pt.coverage(self.protein_sequence, self.peptides, True, True))
+        coverage_arr = np.array(pt.coverage(self.protein_sequence, self.filtered_peptides, True, True))
 
         if self.binary_coverage:
             coverage_arr = np.where(coverage_arr > 0, 1, 0)
@@ -338,16 +342,33 @@ class CoverageAppConfig:
                 f"Length of coverage array ({len(coverage_arr)}) does not match length of protein sequence ({len(self.protein_sequence)})."
             )
         return coverage_arr
+    
+    @property
+    def color_coverage_array(self):
+        
+        vmin = 0
+        if self.colorbar_min is not None:
+            vmin = self.colorbar_min
+        
+        vmax = max(self.coverage_array.max(), 1)
+        if self.colorbar_max is not None:
+            vmax = self.colorbar_max
+
+        # Clamp values to the specified range
+        clamped_array = np.clip(self.coverage_array, vmin, vmax)
+        
+        # Normalize values between 0 and 1
+        if vmax - vmin > 0:
+            normalized_values = (clamped_array - vmin) / (vmax - vmin)
+        else:
+            normalized_values = np.zeros_like(clamped_array)
+
+        return normalized_values
 
     @property
     def color_gradient_hex_array(self) -> list[str]:
-
-        normalized_values = (self.coverage_array - self.coverage_array.min()) / (
-            self.coverage_array.max() - self.coverage_array.min()
-        )
-
         color_map_function = colormaps[self.color_map]
-        color_gradient_array = color_map_function(normalized_values)
+        color_gradient_array = color_map_function(self.color_coverage_array)
         color_gradient_hex_array = [
             f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
             for r, g, b, _ in color_gradient_array
@@ -367,6 +388,16 @@ class CoverageAppConfig:
     def cmap(self) -> mcolors.Colormap:
         """Return the color map object based on the selected color map."""
         return mpl.colormaps.get_cmap(self.color_map)
+
+    @property
+    def vmin(self) -> Optional[float]:
+        """Return the minimum value for the colorbar."""
+        return self.colorbar_min
+    
+    @property
+    def vmax(self) -> Optional[float]:
+        """Return the maximum value for the colorbar."""
+        return self.colorbar_max
 
     @property
     def sites(self) -> List[int]:
@@ -501,6 +532,26 @@ def get_input() -> CoverageAppConfig:
         key="subtitle",
     )
 
+    # Colorbar min/max controls
+    st.subheader("Colorbar Range")
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        colorbar_min = stp.number_input(
+            "Colorbar Min",
+            value=None,
+            help="Set minimum value for colorbar scaling. Leave empty for auto-scaling.",
+            key="colorbar_min",
+        )
+    
+    with col2:
+        colorbar_max = stp.number_input(
+            "Colorbar Max", 
+            value=None,
+            help="Set maximum value for colorbar scaling. Leave empty for auto-scaling.",
+            key="colorbar_max",
+        )
+
     return CoverageAppConfig(
         input_type=cov_input,
         peptides=peptides,
@@ -515,4 +566,6 @@ def get_input() -> CoverageAppConfig:
         auto_spin=auto_spin,
         user_title=user_title,
         user_subtitle=user_subtitle,
+        colorbar_min=colorbar_min,
+        colorbar_max=colorbar_max,
     )

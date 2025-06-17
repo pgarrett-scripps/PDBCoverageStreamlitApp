@@ -103,10 +103,10 @@ def render_mol(pdb, cov_arr, pdb_style, bcolor, highlight_residues, auto_spin):
     stmol.showmol(view, height=500, width=700)
 
 
-def plot_coverage_array(coverage_array, color_map):
+def plot_coverage_array(coverage_array, color_map, vmin=None, vmax=None):
     # add a color bar to understand the
     fig, ax = plt.subplots(figsize=(10, 1))
-    cbar = ax.imshow([coverage_array], aspect='auto', cmap=color_map)
+    cbar = ax.imshow([list(map(int, coverage_array))], aspect='auto', cmap=color_map, vmin=vmin, vmax=vmax)
     fig.colorbar(cbar, orientation='horizontal')
     # set title
     ax.set_title('Protein Coverage')
@@ -159,53 +159,34 @@ def shorten_url(url: str) -> str:
         return f"Error: {e}"
     
 
-def coverage_string(protein_cov_arr, stripped_protein_sequence, cmap, sites=None):
+def coverage_string(protein_cov_arr, stripped_protein_sequence, cmap, color_coverage):
     import matplotlib.colors as mcolors
-
-    # Find the maximum coverage value
-    max_coverage = max(protein_cov_arr)
 
     # Color all covered amino acids based on coverage and show index on hover, using a monospace font
     protein_cov = (
         '<span style="font-family: Courier New, monospace; font-size: 16px;">'
     )
+
     for i, aa in enumerate(stripped_protein_sequence):
         coverage = protein_cov_arr[i]
 
-        # Normalize the coverage based on the maximum value
-        normalized_coverage = coverage / max_coverage
-
         # Get color from colormap
-        color = cmap(normalized_coverage)
+        color = cmap(color_coverage[i])
         hex_color = mcolors.to_hex(color)
 
-        if coverage > 0 and max_coverage > 0:
-            if sites and i in sites:
-                protein_cov += (
-                    f'<span title="Index: {i + 1}; Coverage: {coverage}" style="background-color:red; '
-                    f"color:{hex_color}; font-weight:900; padding:3px; margin:1px; border:1px solid "
-                    f'#cccccc; border-radius:3px;">{aa}</span>'
-                )
-            else:
-                protein_cov += (
-                    f'<span title="Index: {i + 1}; Coverage: {coverage}" style="background-color'
-                    f":#e0e0ff; color:{hex_color}; font-weight:900; padding:3px; margin:1px; "
-                    f'border:1px solid #a0a0ff; border-radius:3px;">{aa}</span>'
-                )
+        if coverage > 0:
+            protein_cov += (
+                f'<span title="Index: {i + 1}; Coverage: {coverage}" style="background-color'
+                f":#e0e0ff; color:{hex_color}; font-weight:900; padding:3px; margin:1px; "
+                f'border:1px solid #a0a0ff; border-radius:3px;">{aa}</span>'
+            )
         else:
-            if sites and i in sites:
-                protein_cov += (
-                    f'<span title="Index: {i + 1}" style="background-color:red; color:{hex_color}; '
-                    f"font-weight:900; padding:3px; margin:1px; border:1px solid #cccccc;"
-                    f' border-radius:3px;">{aa}</span>'
-                )
-            else:
-                # Style the non-covered amino acid for a polished look with a tooltip
-                protein_cov += (
-                    f'<span title="Index: {i + 1}" style="background-color:#f0f0f0; color:{hex_color}; '
-                    f"font-weight:900; padding:3px; margin:1px; border:1px solid #cccccc; "
-                    f'border-radius:3px;">{aa}</span>'
-                )
+            # Style the non-covered amino acid for a polished look with a tooltip
+            protein_cov += (
+                f'<span title="Index: {i + 1}" style="background-color:#f0f0f0; color:{hex_color}; '
+                f"font-weight:900; padding:3px; margin:1px; border:1px solid #cccccc; "
+                f'border-radius:3px;">{aa}</span>'
+            )
     protein_cov += "</span>"
 
     return protein_cov

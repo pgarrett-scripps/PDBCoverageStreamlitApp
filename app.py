@@ -55,7 +55,9 @@ if should_render:
     st.pyplot(
         plot_coverage_array(
             cov_input.coverage_array, 
-            cov_input.color_map
+            cov_input.color_map,
+            vmin=cov_input.vmin,
+            vmax=cov_input.vmax
             )
         )
 
@@ -66,14 +68,14 @@ if should_render:
             cov_input.pdb_style, 
             cov_input.bcolor, 
             cov_input.highlight_residues,
-            cov_input.auto_spin
+            cov_input.auto_spin,
         )
 
     st.markdown(
             coverage_string(cov_input.coverage_array, 
                             cov_input.protein_sequence, 
                             cov_input.cmap, 
-                            cov_input.sites),
+                            color_coverage=cov_input.color_coverage_array),
             unsafe_allow_html=True,
         )
     
