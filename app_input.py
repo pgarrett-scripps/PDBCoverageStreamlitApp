@@ -356,19 +356,19 @@ class CoverageAppConfig:
 
         # Clamp values to the specified range
         clamped_array = np.clip(self.coverage_array, vmin, vmax)
-        
-        # Normalize values between 0 and 1
-        if vmax - vmin > 0:
-            normalized_values = (clamped_array - vmin) / (vmax - vmin)
-        else:
-            normalized_values = np.zeros_like(clamped_array)
 
-        return normalized_values
+
+        return clamped_array
 
     @property
     def color_gradient_hex_array(self) -> list[str]:
+
+        normalized_values = (self.color_coverage_array - self.color_coverage_array.min()) / (
+            self.color_coverage_array.max() - self.color_coverage_array.min()
+        )
+
         color_map_function = colormaps[self.color_map]
-        color_gradient_array = color_map_function(self.color_coverage_array)
+        color_gradient_array = color_map_function(normalized_values)
         color_gradient_hex_array = [
             f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
             for r, g, b, _ in color_gradient_array
@@ -540,6 +540,8 @@ def get_input() -> CoverageAppConfig:
         colorbar_min = stp.number_input(
             "Colorbar Min",
             value=None,
+            min_value=0,
+            step=1,
             help="Set minimum value for colorbar scaling. Leave empty for auto-scaling.",
             key="colorbar_min",
         )
@@ -548,6 +550,8 @@ def get_input() -> CoverageAppConfig:
         colorbar_max = stp.number_input(
             "Colorbar Max", 
             value=None,
+            min_value=0,
+            step=1,
             help="Set maximum value for colorbar scaling. Leave empty for auto-scaling.",
             key="colorbar_max",
         )

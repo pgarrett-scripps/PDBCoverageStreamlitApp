@@ -52,12 +52,11 @@ if should_render:
     st.title(cov_input.title)
     if cov_input.subtitle:
         st.subheader(cov_input.subtitle)
+        
     st.pyplot(
         plot_coverage_array(
-            cov_input.coverage_array, 
+            cov_input.color_coverage_array, 
             cov_input.color_map,
-            vmin=cov_input.vmin,
-            vmax=cov_input.vmax
             )
         )
 

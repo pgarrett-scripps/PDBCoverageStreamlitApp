@@ -103,10 +103,10 @@ def render_mol(pdb, cov_arr, pdb_style, bcolor, highlight_residues, auto_spin):
     stmol.showmol(view, height=500, width=700)
 
 
-def plot_coverage_array(coverage_array, color_map, vmin=None, vmax=None):
+def plot_coverage_array(coverage_array, color_map):
     # add a color bar to understand the
     fig, ax = plt.subplots(figsize=(10, 1))
-    cbar = ax.imshow([list(map(int, coverage_array))], aspect='auto', cmap=color_map, vmin=vmin, vmax=vmax)
+    cbar = ax.imshow([list(map(int, coverage_array))], aspect='auto', cmap=color_map)
     fig.colorbar(cbar, orientation='horizontal')
     # set title
     ax.set_title('Protein Coverage')
@@ -167,12 +167,19 @@ def coverage_string(protein_cov_arr, stripped_protein_sequence, cmap, color_cove
         '<span style="font-family: Courier New, monospace; font-size: 16px;">'
     )
 
+    normalized_values = (color_coverage - color_coverage.min()) / (
+        color_coverage.max() - color_coverage.min()
+    )
+
     for i, aa in enumerate(stripped_protein_sequence):
         coverage = protein_cov_arr[i]
 
         # Get color from colormap
-        color = cmap(color_coverage[i])
+        color = cmap(normalized_values[i])
         hex_color = mcolors.to_hex(color)
+
+        print(hex_color)
+        print(color)
 
         if coverage > 0:
             protein_cov += (
