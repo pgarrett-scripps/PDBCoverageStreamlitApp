@@ -25,8 +25,6 @@ try:
     cov_input.setup()
 except Exception as e:
     st.error(f"Error setting up input: {e}")
-
-    # print trace
     import traceback
     traceback.print_exc()
 

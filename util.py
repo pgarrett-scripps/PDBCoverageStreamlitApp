@@ -80,7 +80,7 @@ def get_predictions(qualifier: str) -> list:
     return list(_get_predictions(qualifier))
 
 
-def render_mol(pdb, cov_arr, pdb_style, bcolor, highlight_residues, auto_spin):
+def render_mol(pdb, cov_arr, pdb_style, bcolor, highlight_residues, auto_spin, spin_speed=0.5):
     view = py3Dmol.view()
     view.addModel(pdb, 'pdb')
     view.setStyle({}, {pdb_style: {}})
@@ -95,8 +95,7 @@ def render_mol(pdb, cov_arr, pdb_style, bcolor, highlight_residues, auto_spin):
     stmol.add_hover(view)
 
     # Add auto-spin feature
-    if auto_spin:
-        view.spin(True)
+    view.spin(auto_spin, spin_speed)  # Set spin speed to 0.5 (adjust as needed)
     
     view.zoomTo()
 
@@ -177,9 +176,6 @@ def coverage_string(protein_cov_arr, stripped_protein_sequence, cmap, color_cove
         # Get color from colormap
         color = cmap(normalized_values[i])
         hex_color = mcolors.to_hex(color)
-
-        print(hex_color)
-        print(color)
 
         if coverage > 0:
             protein_cov += (
