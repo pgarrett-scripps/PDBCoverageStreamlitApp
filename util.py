@@ -13,8 +13,9 @@ import streamlit as st
 from itertools import groupby
 from typing import List
 
+COMPRESSIONPREFIX = "COMPRESSED:"
 
-def compressor(peptide_str: str) -> str:
+def compressor(peptide_str: str, compress: bool = True) -> str:
     """Compress consecutive duplicate peptides into a compact representation."""
     if not peptide_str.strip():
         return ""
@@ -25,13 +26,28 @@ def compressor(peptide_str: str) -> str:
         count = sum(1 for _ in group)
         compressed.append(f"{peptide};{count}")
 
-    return ','.join(compressed)
+    s = ','.join(compressed)
+
+    # compress with gzip if requested
+    if compress:
+        import gzip
+        import base64
+        compressed_bytes = gzip.compress(s.encode('utf-8'))
+        return COMPRESSIONPREFIX + base64.b64encode(compressed_bytes).decode('utf-8')
+    else:
+        return s
 
 
 def decompressor(peptide_str: str) -> str:
     """Decompress the compact peptide representation back into its original form."""
     if not peptide_str.strip():
         return ""
+
+    if peptide_str.startswith(COMPRESSIONPREFIX):
+        import gzip
+        import base64
+        compressed_bytes = base64.b64decode(peptide_str[len(COMPRESSIONPREFIX):])
+        peptide_str = gzip.decompress(compressed_bytes).decode('utf-8')
 
     try:
         peptides = []
