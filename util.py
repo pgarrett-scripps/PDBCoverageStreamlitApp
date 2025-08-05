@@ -149,10 +149,11 @@ def render_mol(pdb, cov_arr, pdb_style, bcolor, highlight_residues, auto_spin, s
     stmol.showmol(view, height=500, width=700)
 
 
-def plot_coverage_array(coverage_array, color_map):
+def plot_coverage_array(coverage_array, color_map, vmin=None, vmax=None):
     # add a color bar to understand the
     fig, ax = plt.subplots(figsize=(10, 1))
-    cbar = ax.imshow([list(map(int, coverage_array))], aspect='auto', cmap=color_map)
+    cbar = ax.imshow([list(map(int, coverage_array))], aspect='auto', cmap=color_map, vmin=vmin, 
+                     vmax=vmax)
     fig.colorbar(cbar, orientation='horizontal')
     # set title
     ax.set_title('Protein Coverage')
@@ -205,7 +206,7 @@ def shorten_url(url: str) -> str:
         return f"Error: {e}"
     
 
-def coverage_string(protein_cov_arr, stripped_protein_sequence, cmap, color_coverage):
+def coverage_string(protein_cov_arr, stripped_protein_sequence, cmap, color_coverage, vmin=None, vmax=None):
     import matplotlib.colors as mcolors
 
     # Color all covered amino acids based on coverage and show index on hover, using a monospace font
@@ -213,9 +214,10 @@ def coverage_string(protein_cov_arr, stripped_protein_sequence, cmap, color_cove
         '<span style="font-family: Courier New, monospace; font-size: 16px;">'
     )
 
-    normalized_values = (color_coverage - color_coverage.min()) / (
-        color_coverage.max() - color_coverage.min()
-    )
+    colorbar_min = vmin if vmin is not None else color_coverage.min()
+    colorbar_max = vmax if vmax is not None else color_coverage.max()
+
+    normalized_values = (color_coverage - colorbar_min) / (colorbar_max - colorbar_min)
 
     for i, aa in enumerate(stripped_protein_sequence):
         coverage = protein_cov_arr[i]

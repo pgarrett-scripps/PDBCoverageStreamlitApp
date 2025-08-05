@@ -357,15 +357,16 @@ class CoverageAppConfig:
         # Clamp values to the specified range
         clamped_array = np.clip(self.coverage_array, vmin, vmax)
 
-
         return clamped_array
+    
 
     @property
     def color_gradient_hex_array(self) -> list[str]:
 
-        normalized_values = (self.color_coverage_array - self.color_coverage_array.min()) / (
-            self.color_coverage_array.max() - self.color_coverage_array.min()
-        )
+        color_min = self.colorbar_min if self.colorbar_min is not None else self.color_coverage_array.min()
+        color_max = self.colorbar_max if self.colorbar_max is not None else self.color_coverage_array.max()
+
+        normalized_values = (self.color_coverage_array - color_min) / (color_max - color_min)
 
         color_map_function = colormaps[self.color_map]
         color_gradient_array = color_map_function(normalized_values)

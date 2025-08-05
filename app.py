@@ -39,6 +39,8 @@ if should_render:
         plot_coverage_array(
             cov_input.color_coverage_array, 
             cov_input.color_map,
+            vmin=cov_input.vmin,
+            vmax=cov_input.vmax,
             )
         )
 
@@ -56,7 +58,9 @@ if should_render:
             coverage_string(cov_input.coverage_array, 
                             cov_input.protein_sequence, 
                             cov_input.cmap, 
-                            color_coverage=cov_input.color_coverage_array),
+                            color_coverage=cov_input.color_coverage_array,
+                            vmin=cov_input.vmin,
+                            vmax=cov_input.vmax),
             unsafe_allow_html=True,
         )
     
