@@ -1,8 +1,10 @@
+import base64
 import json
 from collections import Counter
 from typing import Iterator
 from urllib.parse import quote_plus
 from urllib.request import urlopen
+import zlib
 
 import py3Dmol
 import requests
@@ -13,7 +15,40 @@ import streamlit as st
 from itertools import groupby
 from typing import List
 
-COMPRESSIONPREFIX = "COMPRESSED:"
+COMPRESSIONPREFIX = "COMPRESSED"
+
+
+
+def compress_text(text: str) -> str:
+    """
+    Compress text using zlib and encode with base64 to make it URL-compatible.
+
+    Args:
+        text: The text to compress
+
+    Returns:
+        URL-compatible compressed string
+    """
+    compressed = zlib.compress(
+        text.encode("utf-8"), level=9
+    )  # Level 0-9, 9 is highest compression
+    encoded = base64.urlsafe_b64encode(compressed).decode("utf-8")
+    return encoded
+
+
+def decompress_text(compressed_text: str) -> str:
+    """
+    Decompress text that was compressed with compress_text.
+
+    Args:
+        compressed_text: The compressed text
+
+    Returns:
+        Original decompressed text
+    """
+    decoded = base64.urlsafe_b64decode(compressed_text)
+    decompressed = zlib.decompress(decoded).decode("utf-8")
+    return decompressed
 
 def compressor(peptide_str: str, compress: bool = True) -> str:
     """Compress consecutive duplicate peptides into a compact representation."""
@@ -30,10 +65,7 @@ def compressor(peptide_str: str, compress: bool = True) -> str:
 
     # compress with gzip if requested
     if compress:
-        import gzip
-        import base64
-        compressed_bytes = gzip.compress(s.encode('utf-8'))
-        return COMPRESSIONPREFIX + base64.b64encode(compressed_bytes).decode('utf-8')
+        return COMPRESSIONPREFIX + compress_text(s)
     else:
         return s
 
@@ -44,10 +76,9 @@ def decompressor(peptide_str: str) -> str:
         return ""
 
     if peptide_str.startswith(COMPRESSIONPREFIX):
-        import gzip
-        import base64
-        compressed_bytes = base64.b64decode(peptide_str[len(COMPRESSIONPREFIX):])
-        peptide_str = gzip.decompress(compressed_bytes).decode('utf-8')
+
+        peptide_str = decompress_text(peptide_str[len(COMPRESSIONPREFIX):])
+        
 
     try:
         peptides = []

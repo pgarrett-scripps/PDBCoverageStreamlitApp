@@ -28,7 +28,6 @@ except Exception as e:
     import traceback
     traceback.print_exc()
 
-    
     should_render = False
     
 if should_render:
