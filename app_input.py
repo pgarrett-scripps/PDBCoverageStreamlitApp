@@ -294,19 +294,24 @@ class CoverageAppConfig:
     def filtered_peptides(self) -> List[str]:
         """Return the filtered peptides based on the configuration."""
 
-        annots = map(lambda x: pt.parse(x), self.peptides)
+        annots = list(map(lambda x: pt.parse(x), self.peptides))
+
+        for annot in annots:
+            annot.condense_static_mods(inplace=True)
+            annot.isotope_mods = None
+            annot.labile_mods = None
 
         if self.strip_mods:
-            annots = map(lambda x: x.strip(), annots)
+            annots = [x.strip() for x in annots]
 
         if not self.consider_ambiguity:
             for annot in annots:
                 annot.intervals = None
 
-        sequences = map(lambda x: x.serialize(), annots)
+        sequences = [x.serialize() for x in annots]
 
         if self.filter_unique:
-            sequences = set(sequences)
+            sequences = set(sequences)            
 
         return list(sequences)
 
@@ -339,7 +344,8 @@ class CoverageAppConfig:
     @property
     def coverage_array(self) -> np.ndarray:
         """Return the coverage array based on the peptides and protein sequence."""
-        coverage_arr = np.array(pt.coverage(sequence=self.protein_sequence, subsequences=self.filtered_peptides, accumulate=not self.binary_coverage, ignore_mods=False, ignore_ambiguity=False))
+        print(self.filtered_peptides)
+        coverage_arr = np.array(pt.coverage(sequence=self.protein_sequence, subsequences=self.filtered_peptides, accumulate=not self.binary_coverage, ignore_mods=True, ignore_ambiguity=False))
 
         if self.binary_coverage:
             coverage_arr = np.where(coverage_arr > 0, 1, 0)
