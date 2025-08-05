@@ -252,6 +252,7 @@ class CoverageAppConfig:
                 binary_coverage: bool,
                 strip_mods: bool,
                 filter_unique: bool,
+                consider_ambiguity: bool,
                 auto_spin: bool,
                 user_title: Optional[str],
                 user_subtitle: Optional[str],
@@ -268,6 +269,7 @@ class CoverageAppConfig:
         self.binary_coverage = binary_coverage
         self.strip_mods = strip_mods
         self.filter_unique = filter_unique
+        self.consider_ambiguity = consider_ambiguity
         self.auto_spin = auto_spin
         self.user_title = user_title
         self.user_subtitle = user_subtitle
@@ -291,18 +293,22 @@ class CoverageAppConfig:
     @property
     def filtered_peptides(self) -> List[str]:
         """Return the filtered peptides based on the configuration."""
-        if self.strip_mods:
-            peptides = [pt.strip_mods(p) for p in self.peptides]
-        else:
-            peptides = self.peptides
-        
-        if self.filter_unique:
-            peptides = list(set(peptides))
 
-        # remove ambiguity
-        peptides = [pt.strip_mods(p) for p in peptides]
-        
-        return peptides
+        annots = map(lambda x: pt.parse(x), self.peptides)
+
+        if self.strip_mods:
+            annots = map(lambda x: x.strip(), annots)
+
+        if not self.consider_ambiguity:
+            for annot in annots:
+                annot.intervals = None
+
+        sequences = map(lambda x: x.serialize(), annots)
+
+        if self.filter_unique:
+            sequences = set(sequences)
+
+        return list(sequences)
 
     @property
     def protein_sequence(self) -> Optional[str]:
@@ -333,7 +339,7 @@ class CoverageAppConfig:
     @property
     def coverage_array(self) -> np.ndarray:
         """Return the coverage array based on the peptides and protein sequence."""
-        coverage_arr = np.array(pt.coverage(self.protein_sequence, self.filtered_peptides, True, True))
+        coverage_arr = np.array(pt.coverage(sequence=self.protein_sequence, subsequences=self.filtered_peptides, accumulate=not self.binary_coverage, ignore_mods=False, ignore_ambiguity=False))
 
         if self.binary_coverage:
             coverage_arr = np.where(coverage_arr > 0, 1, 0)
@@ -539,6 +545,13 @@ def get_input() -> CoverageAppConfig:
                                     help="Filter unique peptides before coverage calculation."
         )
 
+        consider_ambiguity = stp.checkbox(
+            "Consider ambiguity",
+            value=True,
+            help="Consider ambiguous residues in the coverage calculation.",
+            key="consider_ambiguity",
+        )
+
 
     with st.expander('User-defined Title and Subtitle', expanded=False):
         user_title = stp.text_input(
@@ -603,6 +616,7 @@ def get_input() -> CoverageAppConfig:
         binary_coverage=binary_coverage,
         strip_mods=strip_mods,
         filter_unique=filter_unique, 
+        consider_ambiguity=consider_ambiguity,
         auto_spin=auto_spin,
         user_title=user_title,
         user_subtitle=user_subtitle,
